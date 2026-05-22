@@ -28,6 +28,11 @@ const INTENT_PATTERNS: { intent: SearchIntent; pattern: RegExp }[] = [
       /pengalaman\s*(kerja|profesional)?|riwayat\s*kerja|karir|pekerjaan|work\s*experience|employment|job\s*history|where\s*(have\s*you|did\s*you)\s*work/i,
   },
   {
+    intent: "experience",
+    pattern:
+      /impact|achievement|contribut|dampak|kontribusi|prestasi|value\s*add|what\s*(have|did)\s*(you|he|ginola)|strongest|highlight|each\s*(work|job|role|company)|perusahaan/i,
+  },
+  {
     intent: "education",
     pattern:
       /pendidikan|lulusan|kuliah|universitas|gpa|cum\s*laude|education|degree|university|graduate/i,
@@ -85,6 +90,15 @@ function isBroadExperienceQuery(query: string): boolean {
   );
 }
 
+function needsFullExperienceContext(query: string): boolean {
+  if (isBroadExperienceQuery(query)) return true;
+  return (
+    /impact|achievement|contribut|dampak|kontribusi|prestasi|value\s*add|strongest|highlight|each\s*(work|job|role|company|experience)|every\s*(role|job|company)|summary\s*of\s*impact|semua\s*(pengalaman|perusahaan)|what.{0,40}(impact|achievement|contribution|dampak)|how.{0,30}(impact|value|contribution)/i.test(
+      query
+    ) && !/portdex|asta\s*protek|fajar|freelance/i.test(query)
+  );
+}
+
 async function fetchAllExperienceChunks(): Promise<RetrievedChunk[]> {
   const rows = await db
     .select({
@@ -99,7 +113,14 @@ async function fetchAllExperienceChunks(): Promise<RetrievedChunk[]> {
     .where(eq(documents.source, "experience"))
     .orderBy(documents.id);
 
-  return rows.map((row, index) => ({
+  const seen = new Set<string>();
+  const unique = rows.filter((row) => {
+    if (seen.has(row.title)) return false;
+    seen.add(row.title);
+    return true;
+  });
+
+  return unique.map((row, index) => ({
     ...row,
     similarity: 1 - index * 0.001,
   }));
@@ -188,8 +209,8 @@ export async function retrieveRelevantChunks(
 ): Promise<RetrievedChunk[]> {
   const intent = detectIntent(query);
 
-  // Broad "list all jobs" questions → return every experience row from DB
-  if (intent === "experience" && isBroadExperienceQuery(query)) {
+  // Broad experience / impact questions → return every role from DB
+  if (intent === "experience" && needsFullExperienceContext(query)) {
     return fetchAllExperienceChunks();
   }
 

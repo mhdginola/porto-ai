@@ -1,15 +1,18 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { db } from "@/lib/db";
-import { playgroundDocuments, type NewPlaygroundDocument } from "@/lib/db/schema";
+import {
+  playgroundDocuments,
+  type NewPlaygroundDocument,
+} from "@/lib/db/schema";
 import { embedBatch } from "@/lib/embeddings";
 import { chunkText } from "@/lib/chunker";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const MAX_PAGES = 50;
-const MAX_CHUNKS = 200;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_PAGES = 500;
+const MAX_CHUNKS = 2000;
 
 export async function POST(req: Request) {
   let formData: FormData;
@@ -27,12 +30,15 @@ export async function POST(req: Request) {
   if (file.size > MAX_FILE_SIZE) {
     return Response.json(
       { error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` },
-      { status: 413 }
+      { status: 413 },
     );
   }
 
   if (!file.name.toLowerCase().endsWith(".pdf")) {
-    return Response.json({ error: "Only PDF files are supported" }, { status: 415 });
+    return Response.json(
+      { error: "Only PDF files are supported" },
+      { status: 415 },
+    );
   }
 
   let text: string;
@@ -44,7 +50,7 @@ export async function POST(req: Request) {
     if (pageCount > MAX_PAGES) {
       return Response.json(
         { error: `PDF has too many pages (max ${MAX_PAGES})` },
-        { status: 413 }
+        { status: 413 },
       );
     }
     const result = await extractText(pdf, { mergePages: true });
@@ -53,7 +59,7 @@ export async function POST(req: Request) {
     console.error("[mini-rag/upload] PDF parse failed:", err);
     return Response.json(
       { error: "Failed to read PDF (corrupt or image-only?)" },
-      { status: 422 }
+      { status: 422 },
     );
   }
 
@@ -61,7 +67,7 @@ export async function POST(req: Request) {
   if (chunks.length === 0) {
     return Response.json(
       { error: "No extractable text found in PDF" },
-      { status: 422 }
+      { status: 422 },
     );
   }
 
@@ -74,7 +80,7 @@ export async function POST(req: Request) {
     console.error("[mini-rag/upload] embed failed:", err);
     return Response.json(
       { error: "Embedding service unavailable. Is Ollama running?" },
-      { status: 503 }
+      { status: 503 },
     );
   }
 

@@ -23,9 +23,10 @@ const demos: Demo[] = [
     status: "live",
   },
   {
-    titleKey: "playground.demo.imageCode.title",
-    descKey: "playground.demo.imageCode.desc",
-    status: "soon",
+    titleKey: "playground.demo.googleMapsReview.title",
+    descKey: "playground.demo.googleMapsReview.desc",
+    href: "/playground/google-maps-reviews",
+    status: "live",
   },
   {
     titleKey: "playground.demo.miniRag.title",
@@ -36,7 +37,8 @@ const demos: Demo[] = [
   {
     titleKey: "playground.demo.sentiment.title",
     descKey: "playground.demo.sentiment.desc",
-    status: "soon",
+    href: "/playground/sentiment",
+    status: "live",
   },
 ];
 

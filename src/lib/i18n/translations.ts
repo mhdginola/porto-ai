@@ -66,9 +66,9 @@ const en = {
   "playground.demo.summarizer.title": "Text Summarizer",
   "playground.demo.summarizer.desc":
     "Paste any article and get a 3-bullet TL;DR streamed live.",
-  "playground.demo.imageCode.title": "Image → Code",
-  "playground.demo.imageCode.desc":
-    "Upload a UI mockup, get clean React + Tailwind code back.",
+  "playground.demo.googleMapsReview.title": "Google Maps Review Summarizer",
+  "playground.demo.googleMapsReview.desc":
+    "Type a place name — we fetch Google Maps reviews and summarize pros, cons, and whether it's worth visiting.",
   "playground.demo.miniRag.title": "Mini RAG",
   "playground.demo.miniRag.desc":
     "Upload a PDF and chat with it. Powered by pgvector.",
@@ -146,6 +146,53 @@ const en = {
   "miniRag.suggestion3": "Apa angka penting yang disebut?",
   "miniRag.retrievedSources": "Retrieved sources",
   "miniRag.citationsHint": "Citations will appear here after you ask a question.",
+  "sentiment.title": "Sentiment Analyzer",
+  "sentiment.subtitle":
+    "Paste a review, message, or email. Get emotion + intent classified live with confidence scores.",
+  "sentiment.yourText": "Your text",
+  "sentiment.placeholder": "Paste text to analyze…",
+  "sentiment.analyze": "Analyze",
+  "sentiment.analyzing": "Analyzing…",
+  "sentiment.stop": "Stop",
+  "sentiment.tooLong": "Too long (max 5,000 chars)",
+  "sentiment.error": "Something went wrong.",
+  "sentiment.emptyHint":
+    "Results stream here — emotion, intent, summary, and keywords.",
+  "sentiment.emotion": "Emotion",
+  "sentiment.intent": "Intent",
+  "sentiment.confidence": "Confidence",
+  "sentiment.summary": "Summary",
+  "sentiment.keywords": "Keywords",
+  "sentiment.exampleComplaint": "Complaint",
+  "sentiment.examplePraise": "Praise (ID)",
+  "sentiment.exampleSupport": "Support",
+  "reviews.title": "Google Maps Review Summarizer",
+  "reviews.subtitle":
+    "Enter a place name. We fetch reviews from Google Maps and summarize pros, cons, themes, and a clear verdict.",
+  "reviews.placeName": "Place name",
+  "reviews.placeholder": "e.g. Hachi Grill Ampera Jakarta",
+  "reviews.hint":
+    "Tip: include the area or city for better matches (e.g. restaurant name + neighborhood).",
+  "reviews.analyze": "Search & summarize",
+  "reviews.fetching": "Fetching from Google Maps…",
+  "reviews.analyzing": "Analyzing reviews…",
+  "reviews.tooLong": "Too long (max 120 chars)",
+  "reviews.viewOnMaps": "View on Google Maps",
+  "reviews.reviewSingular": "review fetched",
+  "reviews.reviewPlural": "reviews fetched",
+  "reviews.sourceReviews": "Based on up to 5 individual Google Maps reviews.",
+  "reviews.sourceReviewSummary": "Based on Google's AI review summary (individual review texts unavailable).",
+  "reviews.sourceEditorial": "Based on Google's editorial description and place info — individual reviews unavailable via API for this key.",
+  "reviews.error": "Something went wrong.",
+  "reviews.emptyHint":
+    "Verdict, pros, cons, and recommendation will stream here.",
+  "reviews.verdict": "Verdict",
+  "reviews.pros": "What people love",
+  "reviews.cons": "Common complaints",
+  "reviews.themes": "Common themes",
+  "reviews.recommendation": "Our take",
+  "reviews.exampleRestaurant": "Restaurant",
+  "reviews.exampleCafe": "Café (ID)",
 } as const;
 
 const id: Record<keyof typeof en, string> = {
@@ -214,9 +261,9 @@ const id: Record<keyof typeof en, string> = {
   "playground.demo.summarizer.title": "Text Summarizer",
   "playground.demo.summarizer.desc":
     "Tempel artikel apa saja dan dapatkan ringkasan bullet langsung.",
-  "playground.demo.imageCode.title": "Image → Code",
-  "playground.demo.imageCode.desc":
-    "Upload mockup UI, dapatkan kode React + Tailwind yang rapi.",
+  "playground.demo.googleMapsReview.title": "Ringkas Ulasan Google Maps",
+  "playground.demo.googleMapsReview.desc":
+    "Ketik nama tempat — kami ambil ulasan Google Maps lalu ringkas plus, minus, dan layak dikunjungi atau tidak.",
   "playground.demo.miniRag.title": "Mini RAG",
   "playground.demo.miniRag.desc":
     "Upload PDF dan chat dengan isinya. Powered by pgvector.",
@@ -295,6 +342,53 @@ const id: Record<keyof typeof en, string> = {
   "miniRag.retrievedSources": "Sumber yang diambil",
   "miniRag.citationsHint":
     "Sitasi akan muncul di sini setelah Anda mengajukan pertanyaan.",
+  "sentiment.title": "Sentiment Analyzer",
+  "sentiment.subtitle":
+    "Tempel review, pesan, atau email. Dapatkan klasifikasi emosi + intent secara live dengan skor confidence.",
+  "sentiment.yourText": "Teks Anda",
+  "sentiment.placeholder": "Tempel teks untuk dianalisis…",
+  "sentiment.analyze": "Analisis",
+  "sentiment.analyzing": "Menganalisis…",
+  "sentiment.stop": "Berhenti",
+  "sentiment.tooLong": "Terlalu panjang (maks 5.000 karakter)",
+  "sentiment.error": "Terjadi kesalahan.",
+  "sentiment.emptyHint":
+    "Hasil akan muncul di sini — emosi, intent, ringkasan, dan kata kunci.",
+  "sentiment.emotion": "Emosi",
+  "sentiment.intent": "Intent",
+  "sentiment.confidence": "Confidence",
+  "sentiment.summary": "Ringkasan",
+  "sentiment.keywords": "Kata kunci",
+  "sentiment.exampleComplaint": "Keluhan",
+  "sentiment.examplePraise": "Pujian (ID)",
+  "sentiment.exampleSupport": "Support",
+  "reviews.title": "Ringkas Ulasan Google Maps",
+  "reviews.subtitle":
+    "Ketik nama tempat. Kami ambil ulasan dari Google Maps lalu ringkas plus, minus, tema, dan verdict.",
+  "reviews.placeName": "Nama tempat",
+  "reviews.placeholder": "contoh: Hachi Grill Ampera Jakarta",
+  "reviews.hint":
+    "Tip: sertakan area atau kota biar cocok (contoh: nama resto + kecamatan).",
+  "reviews.analyze": "Cari & ringkas",
+  "reviews.fetching": "Mengambil dari Google Maps…",
+  "reviews.analyzing": "Menganalisis ulasan…",
+  "reviews.tooLong": "Terlalu panjang (maks 120 karakter)",
+  "reviews.viewOnMaps": "Lihat di Google Maps",
+  "reviews.reviewSingular": "ulasan diambil",
+  "reviews.reviewPlural": "ulasan diambil",
+  "reviews.sourceReviews": "Berdasarkan hingga 5 ulasan Google Maps individual.",
+  "reviews.sourceReviewSummary": "Berdasarkan ringkasan AI Google Maps (teks ulasan individual tidak tersedia).",
+  "reviews.sourceEditorial": "Berdasarkan deskripsi editorial Google + info tempat — ulasan individual tidak tersedia via API untuk key ini.",
+  "reviews.error": "Terjadi kesalahan.",
+  "reviews.emptyHint":
+    "Verdict, pro, kontra, dan rekomendasi akan muncul di sini.",
+  "reviews.verdict": "Verdict",
+  "reviews.pros": "Yang disukai",
+  "reviews.cons": "Keluhan umum",
+  "reviews.themes": "Tema umum",
+  "reviews.recommendation": "Saran kami",
+  "reviews.exampleRestaurant": "Restoran",
+  "reviews.exampleCafe": "Kafe",
 };
 
 export type TranslationKey = keyof typeof en;
