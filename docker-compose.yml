@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: porto-ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: porto
+      POSTGRES_PASSWORD: porto
+      POSTGRES_DB: porto
+    ports:
+      - "5433:5432"
+    volumes:
+      - porto_pgdata:/var/lib/postgresql/data
+
+volumes:
+  porto_pgdata:

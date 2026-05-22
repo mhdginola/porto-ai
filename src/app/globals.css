@@ -2,25 +2,51 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0a0a0a;
+  --ring: #15803d;
+  --primary: #15803d;
+  --primary-foreground: #ffffff;
+  --primary-soft: #dcfce7;
+  --primary-text: #15803d;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --ring: #86efac;
+  --primary: #86efac;
+  --primary-foreground: #052e1a;
+  --primary-soft: rgba(134, 239, 172, 0.12);
+  --primary-text: #86efac;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 35%, transparent);
+  color: var(--foreground);
 }
