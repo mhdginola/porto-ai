@@ -1,25 +1,25 @@
 "use client";
 
-import { useLocale } from "@/components/layout/LocaleProvider";
-import { ProjectCard } from "@/components/sections/ProjectCard";
 import { Container } from "@/components/ui/Container";
-import { projects } from "@/content/projects";
+import { getProjectsByVisibility } from "@/content/projects";
+import { ProjectListSection } from "@/components/pages/ProjectListSection";
 
 export function ProjectsView() {
-  const { t } = useLocale();
+  const publicList = getProjectsByVisibility("public");
 
   return (
     <Container className="py-16">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        {t("projects.title")}
-      </h1>
-      <p className="mt-3 max-w-xl text-foreground/70">{t("projects.subtitle")}</p>
-
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        {projects.map((p) => (
-          <ProjectCard key={p.slug} project={p} />
-        ))}
-      </div>
+      <ProjectListSection
+        projects={publicList}
+        titleKey="projects.public.title"
+        subtitleKey="projects.public.subtitle"
+        basePath="/projects"
+        emptyKey="projects.public.empty"
+        crossLink={{
+          href: "/work",
+          labelKey: "projects.public.seeClientWork",
+        }}
+      />
     </Container>
   );
 }

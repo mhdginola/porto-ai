@@ -57,3 +57,28 @@ export const playgroundDocuments = pgTable(
 
 export type PlaygroundDocument = typeof playgroundDocuments.$inferSelect;
 export type NewPlaygroundDocument = typeof playgroundDocuments.$inferInsert;
+
+/** Demo items for the public Simple CRUD project (/projects/crud-demo). */
+export const demoItems = pgTable("demo_items", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type DemoItem = typeof demoItems.$inferSelect;
+export type NewDemoItem = typeof demoItems.$inferInsert;
+
+/** Demo users for Simple Auth + Roles project (/projects/auth-demo). */
+export const demoUsers = pgTable("demo_users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type DemoUser = typeof demoUsers.$inferSelect;
+export type NewDemoUser = typeof demoUsers.$inferInsert;

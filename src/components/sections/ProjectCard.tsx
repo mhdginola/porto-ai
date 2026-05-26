@@ -7,13 +7,26 @@ import { getLocalizedProject } from "@/content/projects-i18n";
 import type { Project } from "@/types";
 import { TechBadge } from "@/components/ui/TechBadge";
 
-export function ProjectCard({ project }: { project: Project }) {
+type ProjectCardProps = {
+  project: Project;
+  basePath?: "/projects" | "/work";
+};
+
+export function ProjectCard({
+  project,
+  basePath = "/projects",
+}: ProjectCardProps) {
   const { locale } = useLocale();
   const localized = getLocalizedProject(project, locale);
 
+  const href =
+    project.liveUrl?.startsWith("/")
+      ? project.liveUrl
+      : `${basePath}/${project.slug}`;
+
   return (
     <Link
-      href={`/projects/${project.slug}`}
+      href={href}
       className="group flex flex-col gap-3 rounded-xl border border-foreground/10 p-5 transition-colors hover:bg-foreground/5"
     >
       <div className="flex items-start justify-between gap-3">

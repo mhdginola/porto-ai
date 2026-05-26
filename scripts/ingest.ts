@@ -10,7 +10,7 @@ import {
   profile,
   publications,
 } from "@/content/profile";
-import { projects } from "@/content/projects";
+import { allProjects } from "@/content/projects";
 
 function chunkText(text: string, maxLen = 600, overlap = 80): string[] {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -107,7 +107,7 @@ function buildDocs(): DraftDoc[] {
     metadata: JSON.stringify({ type: "overview" }),
   });
 
-  for (const project of projects) {
+  for (const project of allProjects) {
     const header = `Project: ${project.title} (${project.year})${
       project.client ? ` for ${project.client}` : ""
     }. ${project.summary}`;
@@ -121,7 +121,7 @@ function buildDocs(): DraftDoc[] {
         source: "project",
         sourceId: `${project.slug}-${i}`,
         title: project.title,
-        url: `/projects/${project.slug}`,
+        url: `/${project.visibility === "private" ? "work" : "projects"}/${project.slug}`,
         content,
         metadata: JSON.stringify({
           slug: project.slug,

@@ -8,17 +8,27 @@ import { Container } from "@/components/ui/Container";
 import { TechBadge } from "@/components/ui/TechBadge";
 import type { Project } from "@/types";
 
-export function ProjectDetailView({ project }: { project: Project }) {
+type ProjectDetailViewProps = {
+  project: Project;
+  listHref: "/projects" | "/work";
+  backLabelKey: "projects.backToProjects" | "work.backToWork";
+};
+
+export function ProjectDetailView({
+  project,
+  listHref,
+  backLabelKey,
+}: ProjectDetailViewProps) {
   const { locale, t } = useLocale();
   const localized = getLocalizedProject(project, locale);
 
   return (
     <Container className="py-16">
       <Link
-        href="/projects"
+        href={listHref}
         className="inline-flex items-center gap-1.5 text-sm text-foreground/60 hover:text-foreground"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> {t("projects.backToProjects")}
+        <ArrowLeft className="h-3.5 w-3.5" /> {t(backLabelKey)}
       </Link>
 
       <h1 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">

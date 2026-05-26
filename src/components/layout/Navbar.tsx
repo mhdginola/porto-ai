@@ -14,6 +14,7 @@ const navItems: { href: string; labelKey: TranslationKey }[] = [
   { href: "/", labelKey: "nav.home" },
   { href: "/about", labelKey: "nav.about" },
   { href: "/projects", labelKey: "nav.projects" },
+  { href: "/work", labelKey: "nav.work" },
   { href: "/playground", labelKey: "nav.playground" },
   { href: "/blog", labelKey: "nav.blog" },
   { href: "/contact", labelKey: "nav.contact" },

@@ -5,12 +5,8 @@ import { getProjectBySlug, getProjectsByVisibility } from "@/content/projects";
 
 type Params = { slug: string };
 
-const STATIC_DEMO_SLUGS = new Set(["crud-demo", "auth-demo", "porto-ai"]);
-
 export function generateStaticParams() {
-  return getProjectsByVisibility("public")
-    .filter((p) => !STATIC_DEMO_SLUGS.has(p.slug))
-    .map((p) => ({ slug: p.slug }));
+  return getProjectsByVisibility("private").map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
@@ -19,25 +15,25 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const project = getProjectBySlug(slug, "public");
+  const project = getProjectBySlug(slug, "private");
   if (!project) return { title: "Not found" };
   return { title: project.title, description: project.summary };
 }
 
-export default async function ProjectDetailPage({
+export default async function WorkDetailPage({
   params,
 }: {
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const project = getProjectBySlug(slug, "public");
+  const project = getProjectBySlug(slug, "private");
   if (!project) notFound();
 
   return (
     <ProjectDetailView
       project={project}
-      listHref="/projects"
-      backLabelKey="projects.backToProjects"
+      listHref="/work"
+      backLabelKey="work.backToWork"
     />
   );
 }

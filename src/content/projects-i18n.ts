@@ -222,6 +222,107 @@ yang dipakai staf operasional setiap hari.`,
       ],
     },
   },
+  "auth-demo": {
+    title: {
+      en: "Simple Auth & Roles Demo",
+      id: "Demo Auth & Role Sederhana",
+    },
+    summary: {
+      en: "Login with admin, editor, or viewer — role-based access shown in the dashboard.",
+      id: "Login sebagai admin, editor, atau viewer — akses berbasis role di dashboard.",
+    },
+    description: {
+      en: `Interactive auth demo with bcrypt password checks, JWT sessions in httpOnly
+cookies, and a simple RBAC matrix. Each role unlocks different dashboard panels —
+admin sees everything, editor can manage content, viewer is read-only.`,
+      id: `Demo auth interaktif dengan cek password bcrypt, sesi JWT di cookie httpOnly,
+dan matriks RBAC sederhana. Setiap role membuka panel dashboard berbeda — admin
+melihat semua, editor mengelola konten, viewer hanya baca.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "Session cookies signed with jose (HS256)",
+        "Three seeded roles: admin, editor, viewer",
+        "UI panels gated by minimum role",
+        "Demo accounts listed on the login screen",
+      ],
+      id: [
+        "Cookie sesi ditandatangani jose (HS256)",
+        "Tiga role seed: admin, editor, viewer",
+        "Panel UI dibatasi minimum role",
+        "Akun demo tercantum di layar login",
+      ],
+    },
+  },
+  "crud-demo": {
+    title: {
+      en: "Simple CRUD Demo",
+      id: "Demo CRUD Sederhana",
+    },
+    summary: {
+      en: "Live Create, Read, Update, Delete demo — Next.js API routes and PostgreSQL.",
+      id: "Demo CRUD langsung — API route Next.js dan PostgreSQL.",
+    },
+    description: {
+      en: `Interactive portfolio demo for basic CRUD operations. Add, edit, and delete
+items stored in PostgreSQL via Next.js Route Handlers and Drizzle ORM. Open the live
+demo to try it in the browser — no separate login required.`,
+      id: `Demo portfolio interaktif untuk operasi CRUD dasar. Tambah, ubah, dan hapus
+item yang disimpan di PostgreSQL via Route Handler Next.js dan Drizzle ORM. Buka demo
+live untuk mencoba di browser — tanpa login terpisah.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "Full create / read / update / delete flow in the browser",
+        "REST API with Zod validation",
+        "PostgreSQL persistence via Drizzle",
+        "Bilingual UI (EN / ID)",
+      ],
+      id: [
+        "Alur create / read / update / delete penuh di browser",
+        "REST API dengan validasi Zod",
+        "Penyimpanan PostgreSQL via Drizzle",
+        "UI bilingual (EN / ID)",
+      ],
+    },
+  },
+  "porto-ai": {
+    title: {
+      en: "Porto AI — Portfolio & RAG",
+      id: "Porto AI — Portfolio & RAG",
+    },
+    summary: {
+      en: "This site: Next.js portfolio with pgvector RAG, AI playground, and bilingual UI.",
+      id: "Situs ini: portfolio Next.js dengan RAG pgvector, AI playground, dan UI bilingual.",
+    },
+    description: {
+      en: `Personal portfolio and AI showcase built with Next.js 16, Vercel AI SDK,
+PostgreSQL + pgvector, and hybrid Ollama/Groq providers. Includes Mini RAG over
+uploaded PDFs, sentiment analysis, summarizers, and an embeddable chat widget
+indexed on CV and project content.`,
+      id: `Portfolio pribadi dan showcase AI dengan Next.js 16, Vercel AI SDK,
+PostgreSQL + pgvector, serta provider hybrid Ollama/Groq. Termasuk Mini RAG atas
+PDF yang diunggah, analisis sentimen, summarizer, dan widget chat yang terindeks
+dari CV dan konten proyek.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "RAG chat over CV, projects, and blog with pgvector",
+        "Mini RAG playground with PDF upload and citations",
+        "Dual Groq + Ollama model picker for chat demos",
+        "EN/ID i18n across the portfolio",
+      ],
+      id: [
+        "Chat RAG atas CV, proyek, dan blog dengan pgvector",
+        "Mini RAG playground dengan unggah PDF dan sitasi",
+        "Model picker Groq + Ollama untuk demo chat",
+        "i18n EN/ID di seluruh portfolio",
+      ],
+    },
+  },
 };
 
 export type LocalizedProject = {

@@ -1,9 +1,13 @@
+export type ProjectVisibility = "public" | "private";
+
 export type Project = {
   slug: string;
   title: string;
   summary: string;
   description: string;
   tags: string[];
+  /** public = portfolio / OSS / demos; private = client & internal work */
+  visibility: ProjectVisibility;
   category: "saas" | "ai" | "web" | "mobile" | "tool" | "opensource" | "enterprise";
   thumbnail?: string;
   liveUrl?: string;

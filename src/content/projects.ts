@@ -1,6 +1,7 @@
-import type { Project } from "@/types";
+import type { Project, ProjectVisibility } from "@/types";
 
-export const projects: Project[] = [
+/** Client & internal engagements (shown under /work). */
+export const privateProjects: Project[] = [
   {
     slug: "aml-transaction-screening",
     title: "AML Transaction Screening Platform",
@@ -14,6 +15,7 @@ output. Built with Go (Gin) on the backend, PHP/Laravel for legacy modules, and
 PostgreSQL as the system of record — all wrapped in a clean architecture so the
 domain logic stays portable across services.`,
     tags: ["Golang", "Gin", "Laravel", "PostgreSQL", "ETL", "Python"],
+    visibility: "private",
     category: "enterprise",
     client: "PT Asta Protek Jiarsi",
     role: "Lead Developer",
@@ -24,7 +26,6 @@ domain logic stays portable across services.`,
       "Clean-architecture codebase shared across multiple internal teams",
     ],
     year: 2023,
-    featured: true,
   },
   {
     slug: "portdex-blockchain-ai",
@@ -48,6 +49,7 @@ architecture, implemented new features, and optimized performance.`,
       "Kubernetes",
       "GCP",
     ],
+    visibility: "private",
     category: "ai",
     client: "Portdex",
     role: "Programmer (Part-time)",
@@ -58,7 +60,6 @@ architecture, implemented new features, and optimized performance.`,
       "Applied clean architecture for scalability and maintainability",
     ],
     year: 2025,
-    featured: true,
   },
   {
     slug: "deon-company-profile",
@@ -68,6 +69,7 @@ architecture, implemented new features, and optimized performance.`,
 Next.js and React, with focus on responsive layout, performance, and a clean
 content structure that the marketing team can maintain.`,
     tags: ["Next.js", "React.js", "TypeScript", "Responsive Design"],
+    visibility: "private",
     category: "web",
     client: "PT Fajar Lestari Sejati",
     role: "Full Stack Developer",
@@ -77,7 +79,6 @@ content structure that the marketing team can maintain.`,
       "Fast initial load + SEO-friendly structure",
     ],
     year: 2022,
-    featured: true,
   },
   {
     slug: "warehouse-locator",
@@ -88,6 +89,7 @@ content structure that the marketing team can maintain.`,
 placement and quickly locate goods. Replaced a manual spreadsheet workflow,
 reducing search time and human error.`,
     tags: ["PHP", "MySQL", "Bootstrap", "jQuery"],
+    visibility: "private",
     category: "tool",
     client: "PT Fajar Lestari Sejati",
     role: "Developer",
@@ -106,6 +108,7 @@ reducing search time and human error.`,
 department to onboard and train staff. Includes course content, progress
 tracking, and quiz/assessment features.`,
     tags: ["Laravel", "PHP", "MySQL", "Bootstrap"],
+    visibility: "private",
     category: "web",
     client: "PT Fajar Lestari Sejati",
     role: "Developer",
@@ -125,6 +128,7 @@ tracking, and quiz/assessment features.`,
 Node.js/Express. Improvements touched inventory, reporting, and integration
 modules used daily by operational staff.`,
     tags: ["Node.js", "Express.js", "JavaScript", "MySQL"],
+    visibility: "private",
     category: "enterprise",
     client: "PT Fajar Lestari Sejati",
     role: "Developer",
@@ -137,10 +141,105 @@ modules used daily by operational staff.`,
   },
 ];
 
-export function getProjectBySlug(slug: string) {
-  return projects.find((p) => p.slug === slug);
+/** Open portfolio, demos, and OSS (shown under /projects). Add new entries here. */
+export const publicProjects: Project[] = [
+  {
+    slug: "porto-ai",
+    title: "Porto AI — Portfolio & RAG",
+    summary:
+      "This site: Next.js portfolio with pgvector RAG, AI playground, and bilingual UI.",
+    description: `Personal portfolio and AI showcase built with Next.js 16, Vercel AI SDK,
+PostgreSQL + pgvector, and hybrid Ollama/Groq providers. Includes Mini RAG over
+uploaded PDFs, sentiment analysis, summarizers, and an embeddable chat widget
+indexed on CV and project content.`,
+    tags: [
+      "Next.js",
+      "TypeScript",
+      "Vercel AI SDK",
+      "PostgreSQL",
+      "pgvector",
+      "Ollama",
+      "Groq",
+    ],
+    visibility: "public",
+    category: "ai",
+    role: "Creator",
+    highlights: [
+      "RAG chat over CV, projects, and blog with pgvector",
+      "Mini RAG playground with PDF upload and citations",
+      "Dual Groq + Ollama model picker for chat demos",
+      "EN/ID i18n across the portfolio",
+    ],
+    year: 2026,
+    featured: true,
+    liveUrl: "/playground/mini-rag",
+    repoUrl: "https://github.com/mhdginola/portoAI",
+  },
+  {
+    slug: "crud-demo",
+    title: "Simple CRUD Demo",
+    summary:
+      "Live Create, Read, Update, Delete demo — Next.js API routes and PostgreSQL.",
+    description: `Interactive portfolio demo for basic CRUD operations. Add, edit, and delete
+items stored in PostgreSQL via Next.js Route Handlers and Drizzle ORM. Open the live
+demo to try it in the browser — no separate login required.`,
+    tags: ["Next.js", "TypeScript", "PostgreSQL", "Drizzle ORM", "REST API"],
+    visibility: "public",
+    category: "web",
+    role: "Creator",
+    highlights: [
+      "Full create / read / update / delete flow in the browser",
+      "REST API with Zod validation",
+      "PostgreSQL persistence via Drizzle",
+      "Bilingual UI (EN / ID)",
+    ],
+    year: 2026,
+    liveUrl: "/projects/crud-demo",
+  },
+  {
+    slug: "auth-demo",
+    title: "Simple Auth & Roles Demo",
+    summary:
+      "Login with admin, editor, or viewer — role-based access shown in the dashboard.",
+    description: `Interactive auth demo with bcrypt password checks, JWT sessions in httpOnly
+cookies, and a simple RBAC matrix. Each role unlocks different dashboard panels —
+admin sees everything, editor can manage content, viewer is read-only.`,
+    tags: ["Next.js", "TypeScript", "JWT", "bcrypt", "PostgreSQL", "RBAC"],
+    visibility: "public",
+    category: "web",
+    role: "Creator",
+    highlights: [
+      "Session cookies signed with jose (HS256)",
+      "Three seeded roles: admin, editor, viewer",
+      "UI panels gated by minimum role",
+      "Demo accounts listed on the login screen",
+    ],
+    year: 2026,
+    liveUrl: "/projects/auth-demo",
+  },
+];
+
+export const allProjects: Project[] = [...publicProjects, ...privateProjects];
+
+export function getProjectsByVisibility(
+  visibility: ProjectVisibility
+): Project[] {
+  return allProjects.filter((p) => p.visibility === visibility);
 }
 
+export function getProjectBySlug(
+  slug: string,
+  visibility?: ProjectVisibility
+) {
+  const pool = visibility
+    ? getProjectsByVisibility(visibility)
+    : allProjects;
+  return pool.find((p) => p.slug === slug);
+}
+
+/** @deprecated Use getProjectsByVisibility("public") */
+export const projects = publicProjects;
+
 export function getFeaturedProjects() {
-  return projects.filter((p) => p.featured);
+  return publicProjects.filter((p) => p.featured);
 }
