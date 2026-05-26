@@ -1,14 +1,18 @@
-import { extractText, getDocumentProxy } from "unpdf";
 import { db } from "@/lib/db";
 import {
   playgroundDocuments,
   type NewPlaygroundDocument,
 } from "@/lib/db/schema";
-import { embedBatch } from "@/lib/embeddings";
+import { embedBatch, formatEmbeddingError } from "@/lib/embeddings";
 import { chunkText } from "@/lib/chunker";
+import {
+  extractPdfText,
+  isPdfOcrEnabled,
+  pdfNoTextError,
+} from "@/lib/pdf-extract";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_PAGES = 500;
@@ -41,32 +45,46 @@ export async function POST(req: Request) {
     );
   }
 
-  let text: string;
+  const locale =
+    typeof formData.get("locale") === "string"
+      ? String(formData.get("locale"))
+      : undefined;
+
   let pageCount = 0;
+  let extractionMethod: "text" | "ocr" = "text";
+  let text = "";
+
   try {
     const buffer = new Uint8Array(await file.arrayBuffer());
-    const pdf = await getDocumentProxy(buffer);
-    pageCount = pdf.numPages;
+    const result = await extractPdfText(buffer);
+    text = result.text;
+    pageCount = result.pageCount;
+    extractionMethod = result.method;
+
     if (pageCount > MAX_PAGES) {
       return Response.json(
         { error: `PDF has too many pages (max ${MAX_PAGES})` },
         { status: 413 },
       );
     }
-    const result = await extractText(pdf, { mergePages: true });
-    text = Array.isArray(result.text) ? result.text.join("\n\n") : result.text;
   } catch (err) {
     console.error("[mini-rag/upload] PDF parse failed:", err);
     return Response.json(
-      { error: "Failed to read PDF (corrupt or image-only?)" },
+      { error: "Failed to read PDF (corrupt or unsupported?)" },
       { status: 422 },
     );
   }
 
-  const chunks = chunkText(text, 700, 100);
+  const chunks = chunkText(text, 1000, 120);
   if (chunks.length === 0) {
+    const { error, hint } = pdfNoTextError(locale);
     return Response.json(
-      { error: "No extractable text found in PDF" },
+      {
+        error,
+        hint,
+        code: "PDF_NO_TEXT",
+        ocrEnabled: isPdfOcrEnabled(),
+      },
       { status: 422 },
     );
   }
@@ -79,7 +97,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("[mini-rag/upload] embed failed:", err);
     return Response.json(
-      { error: "Embedding service unavailable. Is Ollama running?" },
+      { error: formatEmbeddingError(err) },
       { status: 503 },
     );
   }
@@ -104,5 +122,6 @@ export async function POST(req: Request) {
     chunks: rows.length,
     pageCount,
     truncated: chunks.length > MAX_CHUNKS,
+    extractionMethod,
   });
 }

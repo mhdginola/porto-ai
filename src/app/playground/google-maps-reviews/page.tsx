@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { aiInfo } from "@/lib/ai";
+import { getDefaultModelRef } from "@/lib/ai";
 import { ReviewSummarizerView } from "./ReviewSummarizerView";
 
 export const metadata: Metadata = {
@@ -7,10 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function GoogleMapsReviewsPage() {
-  return (
-    <ReviewSummarizerView
-      provider={aiInfo.chatProvider}
-      defaultModel={aiInfo.chatModel}
-    />
-  );
+  return <ReviewSummarizerView defaultModelRef={getDefaultModelRef()} />;
 }

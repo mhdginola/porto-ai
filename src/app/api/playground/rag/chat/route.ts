@@ -1,26 +1,60 @@
-import { streamText, type Message } from "ai";
-import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
+import {
+  createDataStreamResponse,
+  formatDataStreamPart,
+  streamText,
+  type Message,
+} from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
-import { db } from "@/lib/db";
-import { playgroundDocuments } from "@/lib/db/schema";
-import { embedOne } from "@/lib/embeddings";
 import {
   miniRagLanguageInstruction,
+  miniRagListInstruction,
   miniRagNotFoundMessage,
+  miniRagScopeInstruction,
+  miniRagSummarizeInstruction,
 } from "@/lib/i18n/locale-prompt";
+import { retrievePlaygroundChunks } from "@/lib/playground-retrieval";
+import {
+  isDocumentSummaryQuery,
+  miniRagOffTopicMessage,
+  shouldRefuseOffTopic,
+} from "@/lib/mini-rag-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-function buildSystem(locale?: string) {
+function buildSystem(locale?: string, query?: string) {
   const notFound = miniRagNotFoundMessage(locale);
-  return `You are an AI assistant answering questions about a PDF the user just uploaded.
+  const summarize = query && isDocumentSummaryQuery(query);
+  return `You are an AI assistant that ONLY answers questions about a PDF the user uploaded.
 
 Rules:
-- Use ONLY the retrieved context. If the answer isn't there, say "${notFound}".
+${miniRagScopeInstruction(locale)}
+${summarize ? miniRagSummarizeInstruction(locale) : ""}
+${miniRagListInstruction(locale)}
+- Use ONLY the retrieved context below. If the answer is not in the context, say exactly: "${notFound}"
+- Never answer from general knowledge, training data, or tasks unrelated to the PDF.
 - Cite passages inline using [1], [2], ... matching the numbered context items.
 ${miniRagLanguageInstruction(locale)}
 - Be concise. Quote short phrases from the source when helpful.`;
+}
+
+function refusalResponse(
+  message: string,
+  model: string | undefined,
+  sources: Array<{ id: number; chunkIndex: number; preview: string }>
+) {
+  return createDataStreamResponse({
+    headers: {
+      "x-rag-sources": encodeURIComponent(JSON.stringify(sources)),
+      ...aiModelResponseHeaders(model),
+    },
+    execute(dataStream) {
+      dataStream.write(formatDataStreamPart("text", message));
+      dataStream.write(
+        formatDataStreamPart("finish_message", { finishReason: "stop" })
+      );
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -41,37 +75,19 @@ export async function POST(req: Request) {
 
   let context = "(no context)";
   let sources: Array<{ id: number; chunkIndex: number; preview: string }> = [];
+  let maxSimilarity = 0;
 
   if (query.trim()) {
     try {
-      const queryEmbedding = await embedOne(query);
-      const similarity = sql<number>`1 - (${cosineDistance(
-        playgroundDocuments.embedding,
-        queryEmbedding
-      )})`;
+      const { chunks, maxSimilarity: topSim } =
+        await retrievePlaygroundChunks(sessionId, query);
+      maxSimilarity = topSim;
 
-      const rows = await db
-        .select({
-          id: playgroundDocuments.id,
-          chunkIndex: playgroundDocuments.chunkIndex,
-          content: playgroundDocuments.content,
-          similarity,
-        })
-        .from(playgroundDocuments)
-        .where(
-          and(
-            eq(playgroundDocuments.sessionId, sessionId),
-            gt(similarity, 0.2)
-          )
-        )
-        .orderBy(desc(similarity))
-        .limit(6);
-
-      if (rows.length > 0) {
-        context = rows
+      if (chunks.length > 0) {
+        context = chunks
           .map((r, i) => `[${i + 1}] ${r.content.trim()}`)
           .join("\n\n");
-        sources = rows.map((r, i) => ({
+        sources = chunks.map((r, i) => ({
           id: i + 1,
           chunkIndex: r.chunkIndex,
           preview: r.content.slice(0, 120) + (r.content.length > 120 ? "…" : ""),
@@ -82,11 +98,22 @@ export async function POST(req: Request) {
     }
   }
 
+  if (
+    query.trim() &&
+    shouldRefuseOffTopic(query, maxSimilarity, sources.length > 0)
+  ) {
+    return refusalResponse(miniRagOffTopicMessage(locale), model, []);
+  }
+
+  const ragMessages = lastUser
+    ? [{ role: "user" as const, content: lastUser.content }]
+    : messages.filter((m) => m.role === "user").slice(-1);
+
   const result = streamText({
     model: chatModel(model),
-    system: `${buildSystem(locale)}\n\n# Retrieved context from the PDF\n${context}`,
-    messages,
-    temperature: 0.2,
+    system: `${buildSystem(locale, query)}\n\n# Retrieved context from the PDF\n${context}`,
+    messages: ragMessages,
+    temperature: 0,
   });
 
   return result.toDataStreamResponse({
@@ -98,7 +125,10 @@ export async function POST(req: Request) {
       console.error("[mini-rag/chat] stream error:", error);
       if (error instanceof Error) {
         if (/api[_ ]?key/i.test(error.message)) {
-          return "Missing or invalid GROQ_API_KEY in .env.local.";
+          return "Missing or invalid API key — check GROQ_API_KEY or CHAT_PROVIDER in .env.local.";
+        }
+        if (/fetch failed|ECONNREFUSED|ollama/i.test(error.message)) {
+          return "Cannot reach Ollama — run `ollama serve` on port 11434.";
         }
         return error.message;
       }

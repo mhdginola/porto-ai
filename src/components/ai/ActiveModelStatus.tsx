@@ -1,36 +1,40 @@
 "use client";
 
 import { useLocale } from "@/components/layout/LocaleProvider";
-import { getModelById, type ChatProvider } from "@/lib/ai-models";
+import { type ModelGroup } from "@/lib/ai-models";
+import { findModelInGroups } from "@/lib/chat-model-ref";
 import { cn } from "@/lib/utils";
 
 type ActiveModelStatusProps = {
-  provider: ChatProvider;
-  selectedModelId: string;
-  confirmedModelId?: string | null;
+  modelRef: string;
+  confirmedModelRef?: string | null;
+  groups: ModelGroup[];
   loading?: boolean;
   className?: string;
 };
 
-const PROVIDER_LABEL: Record<ChatProvider, string> = {
+const PROVIDER_LABEL = {
   groq: "Groq",
   openai: "OpenAI",
-};
+  ollama: "Ollama",
+} as const;
 
 export function ActiveModelStatus({
-  provider,
-  selectedModelId,
-  confirmedModelId,
+  modelRef,
+  confirmedModelRef,
+  groups,
   loading = false,
   className,
 }: ActiveModelStatusProps) {
   const { t } = useLocale();
-  const activeId = confirmedModelId ?? selectedModelId;
-  const active = getModelById(provider, activeId);
+  const activeRef = confirmedModelRef ?? modelRef;
+  const active = findModelInGroups(activeRef, groups);
   const mismatch =
-    confirmedModelId != null && confirmedModelId !== selectedModelId;
+    confirmedModelRef != null && confirmedModelRef !== modelRef;
 
   if (!active) return null;
+
+  const providerName = PROVIDER_LABEL[active.provider];
 
   return (
     <div
@@ -50,7 +54,7 @@ export function ActiveModelStatus({
       />
       <span>
         {loading ? t("ai.generatingVia") : t("ai.active")} · {active.label} ·{" "}
-        {PROVIDER_LABEL[provider]}
+        {providerName}
       </span>
       {mismatch && (
         <span className="text-amber-600 dark:text-amber-400">

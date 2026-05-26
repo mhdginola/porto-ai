@@ -1,7 +1,7 @@
 export class GooglePlacesError extends Error {
   constructor(
     public code: "missing_key" | "not_found" | "api_error" | "no_reviews",
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "GooglePlacesError";
@@ -93,7 +93,7 @@ function getApiKey(): string {
   if (!apiKey) {
     throw new GooglePlacesError(
       "missing_key",
-      "Google Places API key is not configured. Add GOOGLE_PLACES_API_KEY to .env.local."
+      "Google Places API key is not configured. Add GOOGLE_PLACES_API_KEY to .env.local.",
     );
   }
   return apiKey;
@@ -102,7 +102,7 @@ function getApiKey(): string {
 async function placesRequest<T>(
   url: string,
   init: RequestInit,
-  fieldMask: string
+  fieldMask: string,
 ): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -118,7 +118,7 @@ async function placesRequest<T>(
     const detail = await res.text();
     throw new GooglePlacesError(
       "api_error",
-      `Google Places API error (${res.status}): ${detail.slice(0, 200)}`
+      `Google Places API error (${res.status}): ${detail.slice(0, 200)}`,
     );
   }
 
@@ -202,7 +202,7 @@ function buildMeta(
   place: PlaceRecord,
   query: string,
   reviewCount: number,
-  dataSource: GooglePlaceDataSource
+  dataSource: GooglePlaceDataSource,
 ): GooglePlaceMeta {
   return {
     name: place.displayName?.text ?? query,
@@ -232,11 +232,11 @@ function placeHeader(meta: GooglePlaceMeta, sourceNote: string): string {
 
 export function formatReviewsForPrompt(
   meta: GooglePlaceMeta,
-  reviews: GooglePlaceReview[]
+  reviews: GooglePlaceReview[],
 ): string {
   const header = placeHeader(
     meta,
-    `Reviews fetched: ${reviews.length} (most relevant from Google Maps)`
+    `Reviews fetched: ${reviews.length} (most relevant from Google Maps)`,
   );
 
   const body = reviews
@@ -249,11 +249,11 @@ export function formatReviewsForPrompt(
 function formatReviewSummaryForPrompt(
   meta: GooglePlaceMeta,
   summary: string,
-  disclosure?: string
+  disclosure?: string,
 ): string {
   const header = placeHeader(
     meta,
-    "Source: Google Maps AI review summary (not individual review texts)"
+    "Source: Google Maps AI review summary (not individual review texts)",
   );
 
   return `${header}\n\n---\n\nGoogle review summary:\n${summary}${
@@ -261,13 +261,16 @@ function formatReviewSummaryForPrompt(
   }`;
 }
 
-function formatEditorialForPrompt(meta: GooglePlaceMeta, place: PlaceRecord): string {
+function formatEditorialForPrompt(
+  meta: GooglePlaceMeta,
+  place: PlaceRecord,
+): string {
   const editorial = place.editorialSummary?.text?.trim();
   const attributes = formatAttributes(place);
 
   const header = placeHeader(
     meta,
-    "Source: Google editorial description + public place attributes (individual review texts unavailable via API for this key)"
+    "Source: Google editorial description + public place attributes (individual review texts unavailable via API for this key)",
   );
 
   const sections = [
@@ -281,7 +284,7 @@ function formatEditorialForPrompt(meta: GooglePlaceMeta, place: PlaceRecord): st
 
 async function searchPlace(
   query: string,
-  languageCode: "id" | "en"
+  languageCode: "id" | "en",
 ): Promise<PlaceRecord> {
   const data = await placesRequest<PlacesSearchResponse>(
     `${PLACES_BASE}/places:searchText`,
@@ -294,14 +297,14 @@ async function searchPlace(
         maxResultCount: 1,
       }),
     },
-    "places.name,places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.googleMapsUri"
+    "places.name,places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.googleMapsUri",
   );
 
   const place = data.places?.[0];
   if (!place?.name && !place?.id) {
     throw new GooglePlacesError(
       "not_found",
-      `No place found on Google Maps for "${query}". Try a more specific name + area.`
+      `No place found on Google Maps for "${query}". Try a more specific name + area.`,
     );
   }
 
@@ -310,7 +313,7 @@ async function searchPlace(
 
 async function fetchPlaceDetails(
   place: PlaceRecord,
-  languageCode: "id" | "en"
+  languageCode: "id" | "en",
 ): Promise<PlaceRecord> {
   const resourceName = place.name ?? `places/${place.id}`;
   const fieldMask = [
@@ -341,13 +344,13 @@ async function fetchPlaceDetails(
   return placesRequest<PlaceRecord>(
     `${PLACES_BASE}/${resourceName}?languageCode=${languageCode}`,
     { method: "GET" },
-    fieldMask
+    fieldMask,
   );
 }
 
 export async function lookupGooglePlaceReviews(
   query: string,
-  languageCode: "id" | "en" = "id"
+  languageCode: "id" | "en" = "id",
 ): Promise<GooglePlaceLookup> {
   const searchHit = await searchPlace(query, languageCode);
   const place = await fetchPlaceDetails(searchHit, languageCode);
@@ -369,7 +372,7 @@ export async function lookupGooglePlaceReviews(
       reviewsText: formatReviewSummaryForPrompt(
         meta,
         reviewSummaryText,
-        place.reviewSummary?.disclosureText?.text
+        place.reviewSummary?.disclosureText?.text,
       ),
     };
   }
@@ -385,6 +388,6 @@ export async function lookupGooglePlaceReviews(
 
   throw new GooglePlacesError(
     "no_reviews",
-    `Found "${place.displayName?.text ?? query}" on Google Maps but Google did not return review data for this API key. Enable billing and Places API (New) Enterprise + Atmosphere SKU for review access.`
+    `Found "${place.displayName?.text ?? query}" on Google Maps but Google did not return review data for this API key. Enable billing and Places API (New) Enterprise + Atmosphere SKU for review access.`,
   );
 }

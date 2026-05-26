@@ -1,10 +1,25 @@
-export type ChatProvider = "groq" | "openai";
+export type ChatProvider = "groq" | "openai" | "ollama";
+
+/** Providers shown together in the model picker (Groq cloud + Ollama local). */
+export const UI_CHAT_PROVIDERS: ChatProvider[] = ["groq", "ollama"];
+
+export type ModelGroup = {
+  provider: ChatProvider;
+  models: ModelOption[];
+  available: boolean;
+};
 
 export type ModelOption = {
   id: string;
   label: string;
   description: string;
-  badge?: "default" | "fast" | "reasoning" | "preview" | "premium";
+  badge?:
+    | "default"
+    | "fast"
+    | "reasoning"
+    | "preview"
+    | "premium"
+    | "local";
   contextWindow?: number;
 };
 
@@ -69,12 +84,51 @@ export const availableChatModels: Record<ChatProvider, ModelOption[]> = {
       contextWindow: 200000,
     },
   ],
+  ollama: [
+    {
+      id: "Llama3:latest",
+      label: "Llama 3",
+      description: "Local Ollama · 8B — balanced default",
+      badge: "default",
+    },
+    {
+      id: "mistral:latest",
+      label: "Mistral",
+      description: "Local Ollama · 7.2B",
+      badge: "default",
+    },
+    {
+      id: "qwen2.5-coder:latest",
+      label: "Qwen 2.5 Coder",
+      description: "Local Ollama · 7.6B — code-focused",
+      badge: "reasoning",
+    },
+    {
+      id: "phi3:latest",
+      label: "Phi 3",
+      description: "Local Ollama · 3.8B — fast & small",
+      badge: "fast",
+    },
+  ],
 };
 
-export function getModelById(provider: ChatProvider, id: string) {
-  return availableChatModels[provider].find((m) => m.id === id);
+export function getModelById(
+  provider: ChatProvider,
+  id: string,
+  models?: ModelOption[]
+) {
+  const list = models ?? availableChatModels[provider] ?? [];
+  return list.find((m) => m.id === id);
 }
 
-export function isValidModelId(provider: ChatProvider, id: string) {
-  return availableChatModels[provider].some((m) => m.id === id);
+export function isValidModelId(
+  provider: ChatProvider,
+  id: string,
+  models?: ModelOption[]
+) {
+  const list = models ?? availableChatModels[provider] ?? [];
+  if (provider === "ollama" && list.length === 0) {
+    return id.trim().length > 0 && !/embed/i.test(id);
+  }
+  return list.some((m) => m.id === id);
 }

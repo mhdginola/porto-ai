@@ -21,7 +21,6 @@ import { ActiveModelStatus } from "@/components/ai/ActiveModelStatus";
 import { ModelPicker } from "@/components/ai/ModelPicker";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { useChatModel } from "@/hooks/useChatModel";
-import { type ChatProvider } from "@/lib/ai-models";
 import { cn } from "@/lib/utils";
 
 type UploadInfo = {
@@ -30,16 +29,16 @@ type UploadInfo = {
   chunks: number;
   pageCount: number;
   truncated: boolean;
+  extractionMethod?: "text" | "ocr";
 };
 
 type Source = { id: number; chunkIndex: number; preview: string };
 
 type Props = {
-  provider: ChatProvider;
-  defaultModel: string;
+  defaultModelRef: string;
 };
 
-export function MiniRagView({ provider, defaultModel }: Props) {
+export function MiniRagView({ defaultModelRef }: Props) {
   const { locale, t } = useLocale();
   const [upload, setUpload] = useState<UploadInfo | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -47,11 +46,15 @@ export function MiniRagView({ provider, defaultModel }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
   const {
-    model,
-    setModel,
-    confirmedModelId,
+    modelRef,
+    setModelRef,
+    groups,
+    activeProvider,
+    confirmedModelRef,
     onModelFromResponse,
-  } = useChatModel(provider, defaultModel);
+    ollamaConnected,
+    groqAvailable,
+  } = useChatModel(defaultModelRef);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -65,7 +68,7 @@ export function MiniRagView({ provider, defaultModel }: Props) {
     reload,
   } = useChat({
     api: "/api/playground/rag/chat",
-    body: { sessionId: upload?.sessionId, model, locale },
+    body: { sessionId: upload?.sessionId, model: modelRef, locale },
     onResponse(res) {
       onModelFromResponse(res);
       const raw = res.headers.get("x-rag-sources");
@@ -88,6 +91,7 @@ export function MiniRagView({ provider, defaultModel }: Props) {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("locale", locale);
 
     try {
       const res = await fetch("/api/playground/rag/upload", {
@@ -96,7 +100,9 @@ export function MiniRagView({ provider, defaultModel }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setUploadError(data.error ?? "Upload failed");
+        const hint =
+          typeof data.hint === "string" ? ` ${data.hint}` : "";
+        setUploadError((data.error ?? "Upload failed") + hint);
       } else {
         setUpload(data as UploadInfo);
       }
@@ -135,9 +141,9 @@ export function MiniRagView({ provider, defaultModel }: Props) {
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-2">
             <ModelPicker
-              provider={provider}
-              value={model}
-              onChange={setModel}
+              value={modelRef}
+              onChange={setModelRef}
+              groups={groups}
               size="md"
               align="right"
             />
@@ -147,11 +153,16 @@ export function MiniRagView({ provider, defaultModel }: Props) {
             </span>
           </div>
           <ActiveModelStatus
-            provider={provider}
-            selectedModelId={model}
-            confirmedModelId={confirmedModelId}
+            modelRef={modelRef}
+            confirmedModelRef={confirmedModelRef}
+            groups={groups}
             loading={chatLoading}
           />
+          {activeProvider === "ollama" && ollamaConnected === false && (
+            <p className="text-[10px] text-amber-600 dark:text-amber-400">
+              {t("ai.ollamaOffline")}
+            </p>
+          )}
         </div>
       </div>
 
@@ -238,21 +249,23 @@ export function MiniRagView({ provider, defaultModel }: Props) {
           </div>
         </div>
       ) : (
-        <div className="mt-10 grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="rounded-lg bg-primary-soft p-2">
+        <div className="mt-10 grid min-w-0 gap-4 lg:grid-cols-[1fr_320px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-foreground/10 bg-foreground/[0.02] p-4">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
+                <div className="shrink-0 rounded-lg bg-primary-soft p-2">
                   <FileText className="h-4 w-4 text-primary-text" />
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-sm font-medium leading-snug">
                     {upload.filename}
                   </p>
                   <p className="text-xs text-foreground/60">
                     <CheckCircle2 className="mr-1 inline h-3 w-3 text-primary-text" />
                     {upload.chunks} {t("miniRag.chunks")} · {upload.pageCount}{" "}
                     {t("miniRag.pages")} {t("miniRag.indexed")}
+                    {upload.extractionMethod === "ocr" &&
+                      ` · ${t("miniRag.indexedViaOcr")}`}
                     {upload.truncated && ` · ${t("miniRag.truncated")}`}
                   </p>
                 </div>
@@ -391,7 +404,14 @@ export function MiniRagView({ provider, defaultModel }: Props) {
         </code>{" "}
         for embeddings ·{" "}
         <code className="rounded bg-foreground/10 px-1 py-0.5">pgvector</code> for
-        retrieval · <code className="rounded bg-foreground/10 px-1 py-0.5">Groq</code>{" "}
+        retrieval ·{" "}
+        <code className="rounded bg-foreground/10 px-1 py-0.5">
+          {activeProvider === "ollama"
+            ? "Ollama"
+            : activeProvider === "groq"
+              ? "Groq"
+              : "OpenAI"}
+        </code>{" "}
         for generation. Per-session isolation via{" "}
         <code className="rounded bg-foreground/10 px-1 py-0.5">sessionId</code>.
       </p>

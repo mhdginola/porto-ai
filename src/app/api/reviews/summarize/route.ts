@@ -45,13 +45,16 @@ export async function POST(req: Request) {
 
   const text = body.prompt?.trim();
   if (!text) {
-    return Response.json({ error: "Missing reviews to summarize" }, { status: 400 });
+    return Response.json(
+      { error: "Missing reviews to summarize" },
+      { status: 400 },
+    );
   }
 
   if (text.length > MAX_INPUT_CHARS) {
     return Response.json(
       { error: `Text too long (max ${MAX_INPUT_CHARS} chars)` },
-      { status: 413 }
+      { status: 413 },
     );
   }
 

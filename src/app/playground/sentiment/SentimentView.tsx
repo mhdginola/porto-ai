@@ -19,7 +19,6 @@ import { useLocale } from "@/components/layout/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { useChatModel } from "@/hooks/useChatModel";
-import { type ChatProvider } from "@/lib/ai-models";
 import {
   EMOTION_STYLES,
   INTENT_STYLES,
@@ -47,8 +46,7 @@ const EXAMPLES: {
 ];
 
 type Props = {
-  provider: ChatProvider;
-  defaultModel: string;
+  defaultModelRef: string;
 };
 
 function ConfidenceBar({
@@ -217,13 +215,11 @@ function ResultPanel({
   );
 }
 
-export function SentimentView({ provider, defaultModel }: Props) {
+export function SentimentView({ defaultModelRef }: Props) {
   const { locale, t } = useLocale();
   const [input, setInput] = useState("");
-  const { model, setModel, confirmedModelId } = useChatModel(
-    provider,
-    defaultModel
-  );
+  const { modelRef, setModelRef, groups, confirmedModelRef } =
+    useChatModel(defaultModelRef);
 
   const { object, submit, isLoading, error, stop } = useObject({
     api: "/api/sentiment",
@@ -243,7 +239,7 @@ export function SentimentView({ provider, defaultModel }: Props) {
 
   function analyze() {
     if (!input.trim() || tooLong) return;
-    submit({ prompt: input, model, locale });
+    submit({ prompt: input, model: modelRef, locale });
   }
 
   return (
@@ -267,9 +263,9 @@ export function SentimentView({ provider, defaultModel }: Props) {
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-2">
             <ModelPicker
-              provider={provider}
-              value={model}
-              onChange={setModel}
+              value={modelRef}
+              onChange={setModelRef}
+              groups={groups}
               size="md"
               align="right"
             />
@@ -279,9 +275,9 @@ export function SentimentView({ provider, defaultModel }: Props) {
             </span>
           </div>
           <ActiveModelStatus
-            provider={provider}
-            selectedModelId={model}
-            confirmedModelId={confirmedModelId}
+            modelRef={modelRef}
+            confirmedModelRef={confirmedModelRef}
+            groups={groups}
             loading={isLoading}
           />
         </div>

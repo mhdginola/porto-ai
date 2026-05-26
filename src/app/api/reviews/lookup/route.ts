@@ -1,4 +1,7 @@
-import { lookupGooglePlaceReviews, GooglePlacesError } from "@/lib/google-places";
+import {
+  lookupGooglePlaceReviews,
+  GooglePlacesError,
+} from "@/lib/google-places";
 import { parseLocale } from "@/lib/i18n/types";
 
 export const runtime = "nodejs";
@@ -19,7 +22,7 @@ export async function POST(req: Request) {
   if (query.length > 120) {
     return Response.json(
       { error: "Place name too long (max 120 chars)" },
-      { status: 413 }
+      { status: 413 },
     );
   }
 
@@ -39,6 +42,9 @@ export async function POST(req: Request) {
       return Response.json({ error: err.message, code: err.code }, { status });
     }
     console.error("[/api/reviews/lookup]", err);
-    return Response.json({ error: "Failed to fetch Google Maps reviews" }, { status: 500 });
+    return Response.json(
+      { error: "Failed to fetch Google Maps reviews" },
+      { status: 500 },
+    );
   }
 }

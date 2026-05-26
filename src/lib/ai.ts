@@ -1,6 +1,15 @@
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
-import { isValidModelId, type ChatProvider } from "@/lib/ai-models";
+import {
+  isValidModelId,
+  type ChatProvider,
+  type ModelGroup,
+  type ModelOption,
+} from "@/lib/ai-models";
+import {
+  encodeModelRef,
+  parseModelRef,
+} from "@/lib/chat-model-ref";
 
 export type EmbeddingProvider = "ollama" | "openai";
 export type { ChatProvider };
@@ -21,7 +30,9 @@ const EMBEDDING_MODEL =
 const CHAT_MODEL =
   CHAT_PROVIDER === "groq"
     ? (process.env.GROQ_CHAT_MODEL ?? "llama-3.3-70b-versatile")
-    : (process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini");
+    : CHAT_PROVIDER === "ollama"
+      ? (process.env.OLLAMA_CHAT_MODEL ?? "Llama3:latest")
+      : (process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini");
 
 const ollama = createOpenAI({
   baseURL: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1",
@@ -36,24 +47,74 @@ export function embeddingModel() {
   return openai.embedding(EMBEDDING_MODEL);
 }
 
-export function resolveChatModelId(modelId?: string): string {
-  return modelId && isValidModelId(CHAT_PROVIDER, modelId)
-    ? modelId
-    : CHAT_MODEL;
-}
-
-export function chatModel(modelId?: string) {
-  const id = resolveChatModelId(modelId);
-  if (CHAT_PROVIDER === "groq") {
-    return groq(id);
+export function getDefaultModelRef(): string {
+  if (CHAT_PROVIDER === "ollama") {
+    return encodeModelRef("ollama", CHAT_MODEL);
   }
-  return openai(id);
+  if (CHAT_PROVIDER === "groq") {
+    return encodeModelRef("groq", CHAT_MODEL);
+  }
+  return encodeModelRef("openai", CHAT_MODEL);
 }
 
-export function aiModelResponseHeaders(requestedModel?: string) {
+function isChatProviderConfigured(provider: ChatProvider): boolean {
+  if (provider === "groq") return Boolean(process.env.GROQ_API_KEY?.trim());
+  if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY?.trim());
+  return true;
+}
+
+function isResolvableModelRef(
+  provider: ChatProvider,
+  modelId: string,
+  models?: ModelOption[]
+): boolean {
+  if (provider === "ollama") {
+    return modelId.trim().length > 0 && !/embed/i.test(modelId);
+  }
+  return isValidModelId(provider, modelId, models);
+}
+
+export function resolveChatModelRef(
+  modelRef?: string,
+  groups?: ModelGroup[]
+): { provider: ChatProvider; modelId: string } {
+  const parsed = modelRef ? parseModelRef(modelRef) : null;
+  if (parsed) {
+    const group = groups?.find((g) => g.provider === parsed.provider);
+    if (
+      group?.available &&
+      isValidModelId(parsed.provider, parsed.modelId, group.models)
+    ) {
+      return parsed;
+    }
+    if (
+      !groups &&
+      isChatProviderConfigured(parsed.provider) &&
+      isResolvableModelRef(parsed.provider, parsed.modelId)
+    ) {
+      return parsed;
+    }
+  }
+  return { provider: CHAT_PROVIDER, modelId: CHAT_MODEL };
+}
+
+export function chatModel(modelRef?: string) {
+  const { provider, modelId } = resolveChatModelRef(modelRef);
+  if (provider === "groq") {
+    return groq(modelId);
+  }
+  if (provider === "ollama") {
+    return ollama(modelId);
+  }
+  return openai(modelId);
+}
+
+export function aiModelResponseHeaders(requestedModelRef?: string) {
+  const { provider, modelId } = resolveChatModelRef(requestedModelRef);
   return {
-    "x-ai-model": resolveChatModelId(requestedModel),
-    "x-ai-provider": CHAT_PROVIDER,
+    "x-ai-model": modelId,
+    "x-ai-provider": provider,
+    "x-ai-model-ref": encodeModelRef(provider, modelId),
   };
 }
 

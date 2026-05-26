@@ -9,12 +9,13 @@ Portfolio Full Stack Developer + AI Engineer dengan **chatbot RAG sungguhan**
 - **Styling**: Tailwind CSS v4
 - **AI (hybrid, gratis)**:
   - **Embeddings**: Ollama lokal + `nomic-embed-text` (768d) — gratis & offline
-  - **Chat**: Groq + `llama-3.3-70b-versatile` — free tier super cepat
+  - **Chat**: Ollama lokal (semua model dari `ollama list`) — gratis & offline
+  - **Chat (opsional)**: Groq + `llama-3.3-70b-versatile` — free tier super cepat
   - Provider-agnostic: tinggal ganti `EMBEDDING_PROVIDER` / `CHAT_PROVIDER`
 - **Vector DB**: PostgreSQL 17 + pgvector (HNSW + cosine)
 - **ORM**: Drizzle ORM + Drizzle Kit
 - **Animasi**: Framer Motion
-- **Theme**: next-themes (dark mode default)
+- **Theme**: @teispace/next-themes (dark mode default; React 19 / Next 16 compatible)
 
 ## Setup awal
 
@@ -76,9 +77,9 @@ npm run dev
 Buka [http://localhost:3000](http://localhost:3000), klik bot di pojok kanan
 bawah, lalu coba tanya:
 
-- *"Pernah pakai pgvector?"*
-- *"What's your strongest project?"*
-- *"Apa stack backend yang kamu kuasai?"*
+- _"Pernah pakai pgvector?"_
+- _"What's your strongest project?"_
+- _"Apa stack backend yang kamu kuasai?"_
 
 Jawabannya sekarang berbasis **retrieval** dari konten yang kamu ingest, dengan
 **citations** di bawah jawaban.
@@ -121,7 +122,8 @@ EMBEDDING_PROVIDER=openai      # vector(1536) — update juga di schema.ts!
 CHAT_PROVIDER=openai
 
 # Pakai Ollama untuk chat juga (semuanya lokal, gratis, offline)
-CHAT_PROVIDER=ollama           # TODO: tambahkan branch ollama di chatModel()
+CHAT_PROVIDER=ollama
+OLLAMA_CHAT_MODEL=Llama3:latest
 ```
 
 > Catatan: kalau ganti embedding provider, dimensi vector berubah →
@@ -177,16 +179,16 @@ Lalu jalankan ingest sekali via CI atau lokal yang nunjuk ke DATABASE_URL produk
 
 ## Scripts
 
-| Command | Apa yang dilakukan |
-|---|---|
-| `npm run dev` | Dev server |
-| `npm run build` | Build production |
-| `npm run typecheck` | Cek TS tanpa emit |
-| `npm run db:setup` | Aktifkan extension `vector` |
-| `npm run db:push` | Push schema Drizzle ke DB |
-| `npm run db:studio` | Buka Drizzle Studio (UI DB) |
-| `npm run db:ingest` | Chunk + embed + insert konten |
-| `npm run db:reset` | Setup + push + ingest, sekaligus |
+| Command             | Apa yang dilakukan               |
+| ------------------- | -------------------------------- |
+| `npm run dev`       | Dev server                       |
+| `npm run build`     | Build production                 |
+| `npm run typecheck` | Cek TS tanpa emit                |
+| `npm run db:setup`  | Aktifkan extension `vector`      |
+| `npm run db:push`   | Push schema Drizzle ke DB        |
+| `npm run db:studio` | Buka Drizzle Studio (UI DB)      |
+| `npm run db:ingest` | Chunk + embed + insert konten    |
+| `npm run db:reset`  | Setup + push + ingest, sekaligus |
 
 ## Roadmap
 

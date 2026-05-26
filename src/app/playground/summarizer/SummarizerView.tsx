@@ -10,7 +10,6 @@ import { ActiveModelStatus } from "@/components/ai/ActiveModelStatus";
 import { ModelPicker } from "@/components/ai/ModelPicker";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { useChatModel } from "@/hooks/useChatModel";
-import { type ChatProvider } from "@/lib/ai-models";
 import { cn } from "@/lib/utils";
 
 type Style = "bullet" | "paragraph" | "tldr";
@@ -27,11 +26,10 @@ const EXAMPLES: { labelKey: "summarizer.exampleEn" | "summarizer.exampleId"; tex
 ];
 
 type Props = {
-  provider: ChatProvider;
-  defaultModel: string;
+  defaultModelRef: string;
 };
 
-export function SummarizerView({ provider, defaultModel }: Props) {
+export function SummarizerView({ defaultModelRef }: Props) {
   const { locale, t } = useLocale();
   const [style, setStyle] = useState<Style>("bullet");
   const [copied, setCopied] = useState(false);
@@ -57,11 +55,13 @@ export function SummarizerView({ provider, defaultModel }: Props) {
     [t]
   );
   const {
-    model,
-    setModel,
-    confirmedModelId,
+    modelRef,
+    setModelRef,
+    groups,
+    confirmedModelRef,
     onModelFromResponse,
-  } = useChatModel(provider, defaultModel);
+    activeProvider,
+  } = useChatModel(defaultModelRef);
 
   const {
     completion,
@@ -73,7 +73,7 @@ export function SummarizerView({ provider, defaultModel }: Props) {
     error,
   } = useCompletion({
     api: "/api/summarize",
-    body: { style, model, locale },
+    body: { style, model: modelRef, locale },
     onResponse: onModelFromResponse,
   });
 
@@ -116,9 +116,9 @@ export function SummarizerView({ provider, defaultModel }: Props) {
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-2">
             <ModelPicker
-              provider={provider}
-              value={model}
-              onChange={setModel}
+              value={modelRef}
+              onChange={setModelRef}
+              groups={groups}
               size="md"
               align="right"
             />
@@ -128,9 +128,9 @@ export function SummarizerView({ provider, defaultModel }: Props) {
             </span>
           </div>
           <ActiveModelStatus
-            provider={provider}
-            selectedModelId={model}
-            confirmedModelId={confirmedModelId}
+            modelRef={modelRef}
+            confirmedModelRef={confirmedModelRef}
+            groups={groups}
             loading={isLoading}
           />
         </div>
@@ -273,7 +273,9 @@ export function SummarizerView({ provider, defaultModel }: Props) {
 
       <p className="mt-10 text-xs text-foreground/50">
         Powered by Vercel AI SDK · provider:{" "}
-        <code className="rounded bg-foreground/10 px-1 py-0.5">{provider}</code>{" "}
+        <code className="rounded bg-foreground/10 px-1 py-0.5">
+          {activeProvider}
+        </code>{" "}
         · source:{" "}
         <code className="rounded bg-foreground/10 px-1 py-0.5">
           src/app/api/summarize/route.ts

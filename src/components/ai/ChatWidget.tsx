@@ -9,26 +9,25 @@ import { useLocale } from "@/components/layout/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { ModelPicker } from "@/components/ai/ModelPicker";
 import { useChatModel } from "@/hooks/useChatModel";
-import { type ChatProvider } from "@/lib/ai-models";
 import { cn } from "@/lib/utils";
 
 type Source = { id: number; title: string; url: string | null };
 
 type ChatWidgetProps = {
-  provider: ChatProvider;
-  defaultModel: string;
+  defaultModelRef: string;
 };
 
-export function ChatWidget({ provider, defaultModel }: ChatWidgetProps) {
+export function ChatWidget({ defaultModelRef }: ChatWidgetProps) {
   const { locale, t } = useLocale();
   const [open, setOpen] = useState(false);
   const [sources, setSources] = useState<Source[]>([]);
   const {
-    model,
-    setModel,
-    confirmedModelId,
+    modelRef,
+    setModelRef,
+    groups,
+    confirmedModelRef,
     onModelFromResponse,
-  } = useChatModel(provider, defaultModel);
+  } = useChatModel(defaultModelRef);
 
   const {
     messages,
@@ -40,7 +39,7 @@ export function ChatWidget({ provider, defaultModel }: ChatWidgetProps) {
     reload,
   } = useChat({
     api: "/api/chat",
-    body: { model, locale },
+    body: { model: modelRef, locale },
     onResponse(res) {
       onModelFromResponse(res);
       const raw = res.headers.get("x-rag-sources");
@@ -84,16 +83,16 @@ export function ChatWidget({ provider, defaultModel }: ChatWidgetProps) {
               <p className="text-xs text-foreground/60">{t("chat.subtitle")}</p>
             </div>
             <ModelPicker
-              provider={provider}
-              value={model}
-              onChange={setModel}
+              value={modelRef}
+              onChange={setModelRef}
+              groups={groups}
               align="right"
             />
           </div>
           <ActiveModelStatus
-            provider={provider}
-            selectedModelId={model}
-            confirmedModelId={confirmedModelId}
+            modelRef={modelRef}
+            confirmedModelRef={confirmedModelRef}
+            groups={groups}
             loading={loading}
             className="mt-2"
           />

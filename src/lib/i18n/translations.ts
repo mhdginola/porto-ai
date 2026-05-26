@@ -14,8 +14,7 @@ const en = {
   "hero.titlePrefix": "Hi, I'm",
   "hero.titleLine2": "I build",
   "hero.titleHighlight": "AI-powered",
-  "hero.titleLine2Rest":
-    "web apps — from compliance platforms to blockchain.",
+  "hero.titleLine2Rest": "web apps — from compliance platforms to blockchain.",
   "hero.description":
     "Full Stack Developer building scalable, secure web apps — increasingly powered by AI. Based in Jakarta/Tangerang, working remote-first.",
   "hero.ctaHint":
@@ -88,6 +87,8 @@ const en = {
   "ai.active": "Active",
   "ai.generatingVia": "Generating via",
   "ai.fallbackModel": "(fallback model)",
+  "ai.ollamaOffline":
+    "Ollama offline — run `ollama serve` and refresh (using fallback list)",
   "chat.title": "Ask my AI assistant",
   "chat.subtitle": "RAG over my CV, projects & blog",
   "chat.tryAsking": "Try asking:",
@@ -123,7 +124,9 @@ const en = {
   "miniRag.subtitle":
     "Upload a PDF (max 5MB, 50 pages). It gets parsed, embedded with Ollama, and indexed in pgvector — then chat with it. Citations included.",
   "miniRag.parsing": "Parsing & embedding PDF…",
-  "miniRag.parsingHint": "This usually takes 5–15 seconds.",
+  "miniRag.parsingHint":
+    "Usually 5–15 seconds. Image-only PDFs (e.g. Canva CV) use OCR and may take 30–60 seconds.",
+  "miniRag.indexedViaOcr": "via OCR",
   "miniRag.dropPdf": "Drop a PDF here, or click to browse",
   "miniRag.limits": "Max 5MB · max 50 pages · text-based PDFs work best",
   "miniRag.step1Title": "1. Parse",
@@ -131,7 +134,7 @@ const en = {
   "miniRag.step2Title": "2. Embed",
   "miniRag.step2Desc": "Chunks → Ollama nomic-embed-text (768d)",
   "miniRag.step3Title": "3. Retrieve",
-  "miniRag.step3Desc": "pgvector cosine search → Groq Llama 3.3",
+  "miniRag.step3Desc": "pgvector cosine search → Ollama chat model",
   "miniRag.chatPlaceholder": "Ask about your PDF…",
   "miniRag.uploadAnother": "Upload another PDF",
   "miniRag.ready": "Ready — ask anything about",
@@ -145,7 +148,8 @@ const en = {
   "miniRag.suggestion2": "What are the main conclusions?",
   "miniRag.suggestion3": "Apa angka penting yang disebut?",
   "miniRag.retrievedSources": "Retrieved sources",
-  "miniRag.citationsHint": "Citations will appear here after you ask a question.",
+  "miniRag.citationsHint":
+    "Citations will appear here after you ask a question.",
   "sentiment.title": "Sentiment Analyzer",
   "sentiment.subtitle":
     "Paste a review, message, or email. Get emotion + intent classified live with confidence scores.",
@@ -181,8 +185,10 @@ const en = {
   "reviews.reviewSingular": "review fetched",
   "reviews.reviewPlural": "reviews fetched",
   "reviews.sourceReviews": "Based on up to 5 individual Google Maps reviews.",
-  "reviews.sourceReviewSummary": "Based on Google's AI review summary (individual review texts unavailable).",
-  "reviews.sourceEditorial": "Based on Google's editorial description and place info — individual reviews unavailable via API for this key.",
+  "reviews.sourceReviewSummary":
+    "Based on Google's AI review summary (individual review texts unavailable).",
+  "reviews.sourceEditorial":
+    "Based on Google's editorial description and place info — individual reviews unavailable via API for this key.",
   "reviews.error": "Something went wrong.",
   "reviews.emptyHint":
     "Verdict, pros, cons, and recommendation will stream here.",
@@ -209,8 +215,7 @@ const id: Record<keyof typeof en, string> = {
   "hero.titlePrefix": "Halo, saya",
   "hero.titleLine2": "Saya membangun",
   "hero.titleHighlight": "aplikasi web berbasis AI",
-  "hero.titleLine2Rest":
-    "— dari platform compliance hingga blockchain.",
+  "hero.titleLine2Rest": "— dari platform compliance hingga blockchain.",
   "hero.description":
     "Full Stack Developer yang membangun aplikasi web skala besar dan aman — semakin banyak didukung AI. Berbasis Jakarta/Tangerang, remote-first.",
   "hero.ctaHint":
@@ -283,6 +288,8 @@ const id: Record<keyof typeof en, string> = {
   "ai.active": "Aktif",
   "ai.generatingVia": "Menghasilkan via",
   "ai.fallbackModel": "(model fallback)",
+  "ai.ollamaOffline":
+    "Ollama offline — jalankan `ollama serve` lalu refresh (daftar cadangan)",
   "chat.title": "Tanya asisten AI saya",
   "chat.subtitle": "RAG dari CV, proyek & blog saya",
   "chat.tryAsking": "Coba tanyakan:",
@@ -318,15 +325,18 @@ const id: Record<keyof typeof en, string> = {
   "miniRag.subtitle":
     "Upload PDF (maks 5MB, 50 halaman). Di-parse, di-embed dengan Ollama, dan diindeks di pgvector — lalu chat dengan isinya. Sertakan sitasi.",
   "miniRag.parsing": "Mem-parse & meng-embed PDF…",
-  "miniRag.parsingHint": "Biasanya membutuhkan 5–15 detik.",
+  "miniRag.parsingHint":
+    "Biasanya 5–15 detik. PDF hanya-gambar (mis. CV Canva) memakai OCR dan bisa 30–60 detik.",
+  "miniRag.indexedViaOcr": "via OCR",
   "miniRag.dropPdf": "Letakkan PDF di sini, atau klik untuk browse",
-  "miniRag.limits": "Maks 5MB · maks 50 halaman · PDF berbasis teks paling baik",
+  "miniRag.limits":
+    "Maks 5MB · maks 50 halaman · PDF berbasis teks paling baik",
   "miniRag.step1Title": "1. Parse",
   "miniRag.step1Desc": "Teks PDF diekstrak via unpdf",
   "miniRag.step2Title": "2. Embed",
   "miniRag.step2Desc": "Chunk → Ollama nomic-embed-text (768d)",
   "miniRag.step3Title": "3. Retrieve",
-  "miniRag.step3Desc": "Pencarian cosine pgvector → Groq Llama 3.3",
+  "miniRag.step3Desc": "Pencarian cosine pgvector → model chat Ollama",
   "miniRag.chatPlaceholder": "Tanya tentang PDF Anda…",
   "miniRag.uploadAnother": "Upload PDF lain",
   "miniRag.ready": "Siap — tanya apa saja tentang",
@@ -376,9 +386,12 @@ const id: Record<keyof typeof en, string> = {
   "reviews.viewOnMaps": "Lihat di Google Maps",
   "reviews.reviewSingular": "ulasan diambil",
   "reviews.reviewPlural": "ulasan diambil",
-  "reviews.sourceReviews": "Berdasarkan hingga 5 ulasan Google Maps individual.",
-  "reviews.sourceReviewSummary": "Berdasarkan ringkasan AI Google Maps (teks ulasan individual tidak tersedia).",
-  "reviews.sourceEditorial": "Berdasarkan deskripsi editorial Google + info tempat — ulasan individual tidak tersedia via API untuk key ini.",
+  "reviews.sourceReviews":
+    "Berdasarkan hingga 5 ulasan Google Maps individual.",
+  "reviews.sourceReviewSummary":
+    "Berdasarkan ringkasan AI Google Maps (teks ulasan individual tidak tersedia).",
+  "reviews.sourceEditorial":
+    "Berdasarkan deskripsi editorial Google + info tempat — ulasan individual tidak tersedia via API untuk key ini.",
   "reviews.error": "Terjadi kesalahan.",
   "reviews.emptyHint":
     "Verdict, pro, kontra, dan rekomendasi akan muncul di sini.",

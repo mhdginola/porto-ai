@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ai/ChatWidget";
 import { siteConfig } from "@/lib/site";
-import { aiInfo } from "@/lib/ai";
+import { getDefaultModelRef } from "@/lib/ai";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -62,10 +62,7 @@ export default function RootLayout({
             <Navbar />
             <main className="flex-1">{children}</main>
             <Footer />
-            <ChatWidget
-              provider={aiInfo.chatProvider}
-              defaultModel={aiInfo.chatModel}
-            />
+            <ChatWidget defaultModelRef={getDefaultModelRef()} />
           </ThemeProvider>
         </LocaleProvider>
       </body>
