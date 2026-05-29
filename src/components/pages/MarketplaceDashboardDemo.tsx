@@ -34,6 +34,7 @@ import {
 import type { TranslationKey } from "@/lib/i18n/translations";
 import {
   formatIdr,
+  formatIdrCompact,
   formatNumberKpi,
   formatOrderDate,
   formatRevenueKpi,
@@ -497,18 +498,33 @@ export function MarketplaceDashboardDemo() {
                             </p>
                           </div>
                         </div>
-                        <div className="relative mt-4 grid grid-cols-3 gap-2 text-center text-[11px]">
+                        <div className="relative mt-4 grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 text-center text-[11px]">
                           {[
-                            { label: t("marketplace.col.price"), val: formatIdr(product.price, loc) },
-                            { label: t("marketplace.col.stock"), val: String(product.stock) },
-                            { label: t("marketplace.col.sales"), val: String(product.sales) },
+                            {
+                              label: t("marketplace.col.price"),
+                              val: formatIdrCompact(product.price, loc),
+                              title: formatIdr(product.price, loc),
+                            },
+                            {
+                              label: t("marketplace.col.stock"),
+                              val: String(product.stock),
+                            },
+                            {
+                              label: t("marketplace.col.sales"),
+                              val: String(product.sales),
+                            },
                           ].map((cell) => (
                             <div
                               key={cell.label}
-                              className="rounded-xl border border-foreground/8 bg-background/50 px-2 py-2.5 backdrop-blur-sm"
+                              className="min-w-0 rounded-xl border border-foreground/8 bg-background/50 px-2 py-2.5 backdrop-blur-sm"
                             >
                               <p className="text-foreground/40">{cell.label}</p>
-                              <p className="mt-0.5 font-bold tabular-nums">{cell.val}</p>
+                              <p
+                                className="mt-0.5 truncate font-bold tabular-nums leading-tight"
+                                title={"title" in cell ? cell.title : undefined}
+                              >
+                                {cell.val}
+                              </p>
                             </div>
                           ))}
                         </div>

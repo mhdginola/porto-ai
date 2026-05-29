@@ -17,6 +17,27 @@ export function formatIdr(value: number, locale: "en" | "id") {
   }).format(value);
 }
 
+/** Shorter IDR for tight UI (product cards, chips). */
+export function formatIdrCompact(value: number, locale: "en" | "id") {
+  const numFmt = (n: number, opts: Intl.NumberFormatOptions) =>
+    new Intl.NumberFormat(locale === "id" ? "id-ID" : "en-US", opts).format(n);
+
+  if (value >= 1_000_000) {
+    const millions = value / 1_000_000;
+    const formatted = numFmt(millions, {
+      minimumFractionDigits: value % 1_000_000 === 0 ? 0 : 1,
+      maximumFractionDigits: 1,
+    });
+    return locale === "id" ? `Rp ${formatted} jt` : `IDR ${formatted}M`;
+  }
+  if (value >= 1_000) {
+    const thousands = value / 1_000;
+    const formatted = numFmt(thousands, { maximumFractionDigits: 0 });
+    return locale === "id" ? `Rp ${formatted} rb` : `IDR ${formatted}K`;
+  }
+  return formatIdr(value, locale);
+}
+
 export function formatCount(value: number, locale: "en" | "id") {
   return new Intl.NumberFormat(locale === "id" ? "id-ID" : "en-US").format(value);
 }
