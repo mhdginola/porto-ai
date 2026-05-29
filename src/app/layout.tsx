@@ -3,10 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { LocaleProvider } from "@/components/layout/LocaleProvider";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { ChatWidget } from "@/components/ai/ChatWidget";
 import { NavigationProgressShell } from "@/components/layout/NavigationProgressShell";
+import { PropertyAgencyPreviewProvider } from "@/components/layout/PropertyAgencyPreviewProvider";
+import { PortfolioShell } from "@/components/layout/PortfolioShell";
 import { siteConfig } from "@/lib/site";
 import { getDefaultModelRef } from "@/lib/ai";
 
@@ -54,18 +53,19 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <LocaleProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <NavigationProgressShell />
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <ChatWidget defaultModelRef={getDefaultModelRef()} />
-          </ThemeProvider>
+          <PropertyAgencyPreviewProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <NavigationProgressShell />
+              <PortfolioShell defaultModelRef={getDefaultModelRef()}>
+                {children}
+              </PortfolioShell>
+            </ThemeProvider>
+          </PropertyAgencyPreviewProvider>
         </LocaleProvider>
       </body>
     </html>

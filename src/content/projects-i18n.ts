@@ -255,6 +255,39 @@ Semua metrik dan data di-hardcode — tanpa backend.`,
       ],
     },
   },
+  "property-agency-builder": {
+    title: {
+      en: "Property Agency Website Builder",
+      id: "Website Builder Agen Properti",
+    },
+    summary: {
+      en: "Build property agency sites with hero, listings, and contact — saved to PostgreSQL, viewed via #slug.",
+      id: "Buat situs agen properti dengan hero, listing, dan kontak — disimpan di PostgreSQL, dibuka via #slug.",
+    },
+    description: {
+      en: `Portfolio demo of a website builder for real-estate agencies. Create multiple
+sites, edit content in the browser, and publish instantly. Public sites are accessed
+at /projects/property-agency-builder#your-slug.`,
+      id: `Demo portfolio website builder untuk agen properti. Buat banyak situs, edit
+konten di browser, dan publikasikan. Situs publik diakses di
+/projects/property-agency-builder#slug-anda.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "Multi-site builder with slug-based public URLs (#slug)",
+        "Hero, about, contact, and property listing sections",
+        "Theme accent colors (emerald, blue, amber)",
+        "PostgreSQL persistence via REST API",
+      ],
+      id: [
+        "Builder multi-situs dengan URL publik berbasis slug (#slug)",
+        "Bagian hero, tentang, kontak, dan listing properti",
+        "Warna aksen tema (emerald, blue, amber)",
+        "Penyimpanan PostgreSQL via REST API",
+      ],
+    },
+  },
   "auth-demo": {
     title: {
       en: "Simple Auth & Roles Demo",

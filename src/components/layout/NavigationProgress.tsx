@@ -69,6 +69,12 @@ export function NavigationProgress() {
   }, [pathname, searchParams, finishNavigation]);
 
   useEffect(() => {
+    const onHashChange = () => finishNavigation();
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [finishNavigation]);
+
+  useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (isModifiedClick(e)) return;
       const anchor = (e.target as Element).closest("a");
@@ -76,7 +82,17 @@ export function NavigationProgress() {
       startNavigation();
     };
 
-    const onPopState = () => startNavigation();
+    const onPopState = () => {
+      queueMicrotask(() => {
+        const nextPath = `${window.location.pathname}${window.location.search}`;
+        const currentPath = `${pathname}${searchParams.size ? `?${searchParams.toString()}` : ""}`;
+        if (nextPath === currentPath) {
+          finishNavigation();
+        } else {
+          startNavigation();
+        }
+      });
+    };
 
     document.addEventListener("click", onClick, true);
     window.addEventListener("popstate", onPopState);
@@ -85,7 +101,7 @@ export function NavigationProgress() {
       window.removeEventListener("popstate", onPopState);
       clearTimers();
     };
-  }, [pathname, startNavigation, clearTimers]);
+  }, [pathname, searchParams, startNavigation, finishNavigation, clearTimers]);
 
   if (reduceMotion) return null;
 

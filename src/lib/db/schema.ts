@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -82,3 +83,21 @@ export const demoUsers = pgTable("demo_users", {
 
 export type DemoUser = typeof demoUsers.$inferSelect;
 export type NewDemoUser = typeof demoUsers.$inferInsert;
+
+/** Property agency websites built in /projects/property-agency-builder. */
+export const propertyAgencySites = pgTable(
+  "property_agency_sites",
+  {
+    id: serial("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    config: text("config").notNull(),
+    isPublished: boolean("is_published").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("property_agency_sites_slug_idx").on(table.slug)]
+);
+
+export type PropertyAgencySite = typeof propertyAgencySites.$inferSelect;
+export type NewPropertyAgencySite = typeof propertyAgencySites.$inferInsert;

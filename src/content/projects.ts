@@ -238,6 +238,27 @@ order tables. All metrics and records are hardcoded — no backend required.`,
     year: 2026,
     liveUrl: "/projects/marketplace-demo",
   },
+  {
+    slug: "property-agency-builder",
+    title: "Property Agency Website Builder",
+    summary:
+      "Build property agency sites with hero, listings, and contact — saved to PostgreSQL, viewed via #slug.",
+    description: `Portfolio demo of a no-code-style website builder for real-estate agencies.
+Create multiple sites, edit content in the browser, and publish instantly. Public sites
+are accessed at /projects/property-agency-builder#your-slug (hash routing for now).`,
+    tags: ["Next.js", "TypeScript", "PostgreSQL", "Drizzle ORM", "Website Builder"],
+    visibility: "public",
+    category: "web",
+    role: "Creator",
+    highlights: [
+      "Multi-site builder with slug-based public URLs (#slug)",
+      "Hero, about, contact, and property listing sections",
+      "Theme accent (emerald, blue, amber)",
+      "PostgreSQL persistence via REST API",
+    ],
+    year: 2026,
+    liveUrl: "/projects/property-agency-builder",
+  },
 ];
 
 export const allProjects: Project[] = [...publicProjects, ...privateProjects];

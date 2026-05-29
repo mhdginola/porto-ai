@@ -15,6 +15,7 @@
     "db:ingest": "tsx scripts/ingest.ts",
     "db:seed-crud": "tsx scripts/seed-crud-demo.ts",
     "db:seed-auth": "tsx scripts/seed-auth-demo.ts",
+    "db:seed-property-agency": "tsx scripts/seed-property-agency-demo.ts",
     "db:test": "tsx scripts/test-search.ts",
     "db:reset": "npm run db:setup && npm run db:push && npm run db:ingest"
   },
@@ -29,6 +30,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
+    "firebase": "^12.14.0",
     "framer-motion": "^12.0.0",
     "jose": "^6.2.3",
     "lucide-react": "^0.469.0",
