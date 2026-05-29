@@ -6,6 +6,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   vector,
 } from "drizzle-orm/pg-core";
 
@@ -83,6 +84,26 @@ export const demoUsers = pgTable("demo_users", {
 
 export type DemoUser = typeof demoUsers.$inferSelect;
 export type NewDemoUser = typeof demoUsers.$inferInsert;
+
+/** Per-role module access for auth demo RBAC (editable by superadmin). */
+export const demoRolePermissions = pgTable(
+  "demo_role_permissions",
+  {
+    id: serial("id").primaryKey(),
+    role: text("role").notNull(),
+    moduleId: text("module_id").notNull(),
+    allowed: boolean("allowed").notNull().default(false),
+  },
+  (table) => [
+    uniqueIndex("demo_role_permissions_role_module_idx").on(
+      table.role,
+      table.moduleId
+    ),
+  ]
+);
+
+export type DemoRolePermission = typeof demoRolePermissions.$inferSelect;
+export type NewDemoRolePermission = typeof demoRolePermissions.$inferInsert;
 
 /** Property agency websites built in /projects/property-agency-builder. */
 export const propertyAgencySites = pgTable(

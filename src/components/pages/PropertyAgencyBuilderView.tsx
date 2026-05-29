@@ -10,23 +10,26 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTheme } from "@teispace/next-themes";
 import "sweetalert2/dist/sweetalert2.min.css";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { usePropertyAgencyPreview } from "@/components/layout/PropertyAgencyPreviewProvider";
 import { PropertyAgencySiteRenderer } from "@/components/pages/PropertyAgencySiteRenderer";
-import { ImageUploadField } from "@/components/property-agency/ImageUploadField";
+import { PropertyAgencyConfigEditor } from "@/components/property-agency/PropertyAgencyConfigEditor";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { alertDialog, confirmDialog } from "@/lib/confirm-dialog";
 import type { PropertyAgencySite } from "@/lib/db/schema";
-import { defaultSiteConfig } from "@/lib/property-agency/defaults";
 import type {
   PropertyAgencyConfig,
   PropertyListing,
 } from "@/lib/property-agency/schemas";
 import { slugifyName } from "@/lib/property-agency/slug";
+import {
+  parsePreviewHash,
+  scrollToPreviewSection,
+} from "@/lib/property-agency/preview-hash";
 import { cn } from "@/lib/utils";
 
 type SiteSummary = Pick<
@@ -35,12 +38,6 @@ type SiteSummary = Pick<
 >;
 
 type SiteFull = SiteSummary & { config: PropertyAgencyConfig };
-
-function readHashSlug(): string | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.location.hash.replace(/^#/, "").trim();
-  return raw || null;
-}
 
 function Field({
   label,
@@ -69,10 +66,15 @@ export function PropertyAgencyBuilderView() {
   const loc = locale === "id" ? "id" : "en";
   const isDark = resolvedTheme === "dark";
 
-  const [hashSlug, setHashSlug] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : readHashSlug()
-  );
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+  const [blogPostId, setBlogPostId] = useState<string | null>(null);
+  const [listingId, setListingId] = useState<string | null>(null);
+  const [hashReady, setHashReady] = useState(false);
   const [previewSite, setPreviewSite] = useState<SiteFull | null>(null);
+  const previewSlugRef = useRef<string | null>(null);
+  const previewSiteRef = useRef<SiteFull | null>(null);
+  previewSlugRef.current = previewSlug;
+  previewSiteRef.current = previewSite;
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
@@ -88,25 +90,64 @@ export function PropertyAgencyBuilderView() {
   const [newSlug, setNewSlug] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const syncHash = useCallback(() => {
-    setHashSlug(readHashSlug());
-  }, []);
+  const applyHash = useCallback(() => {
+    const {
+      siteSlug,
+      section,
+      blogPostId: postId,
+      listingId: propId,
+    } = parsePreviewHash();
+
+    setBlogPostId(postId);
+    setListingId(propId);
+
+    if (!siteSlug && !section && !postId && !propId) {
+      setPreviewSlug(null);
+      setPreviewActive(false);
+      return;
+    }
+
+    setPreviewActive(true);
+
+    if (siteSlug) {
+      setPreviewSlug(siteSlug);
+      return;
+    }
+
+    const slug = previewSlugRef.current;
+    const site = previewSiteRef.current;
+    if (section && slug && site) {
+      scrollToPreviewSection(section);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#${slug}`
+      );
+      return;
+    }
+
+    if (section && !slug) {
+      setPreviewError(t("propertyAgency.siteNotFound"));
+    }
+  }, [setPreviewActive, t]);
 
   useLayoutEffect(() => {
-    const slug = readHashSlug();
-    setHashSlug(slug);
-    setPreviewActive(!!slug);
-  }, [setPreviewActive]);
+    applyHash();
+    setHashReady(true);
+  }, [applyHash]);
 
   useEffect(() => {
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, [syncHash]);
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [applyHash]);
 
   useEffect(() => {
-    setPreviewActive(!!hashSlug);
-  }, [hashSlug, setPreviewActive]);
+    if (!previewSite || !previewSlug) return;
+    const { siteSlug, section } = parsePreviewHash();
+    if (section && (!siteSlug || siteSlug === previewSlug)) {
+      requestAnimationFrame(() => scrollToPreviewSection(section));
+    }
+  }, [previewSite, previewSlug]);
 
   const loadSites = useCallback(async () => {
     setError(null);
@@ -143,7 +184,7 @@ export function PropertyAgencyBuilderView() {
   }, [loadSites]);
 
   useEffect(() => {
-    if (!hashSlug) {
+    if (!previewSlug) {
       setPreviewSite(null);
       setPreviewError(null);
       return;
@@ -153,7 +194,9 @@ export function PropertyAgencyBuilderView() {
     setPreviewLoading(true);
     setPreviewError(null);
 
-    fetch(`/api/projects/property-agency/sites/${encodeURIComponent(hashSlug)}`)
+    fetch(
+      `/api/projects/property-agency/sites/${encodeURIComponent(previewSlug)}`
+    )
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Site not found");
@@ -163,7 +206,7 @@ export function PropertyAgencyBuilderView() {
         if (!cancelled) {
           setPreviewSite(null);
           setPreviewError(
-            e instanceof Error ? e.message : "Site not found"
+            e instanceof Error ? e.message : t("propertyAgency.siteNotFound")
           );
         }
       })
@@ -174,15 +217,12 @@ export function PropertyAgencyBuilderView() {
     return () => {
       cancelled = true;
     };
-  }, [hashSlug]);
+  }, [previewSlug, t]);
 
   function openPreview(slug: string) {
-    if (window.location.hash.replace(/^#/, "") === slug) {
-      setHashSlug(slug);
-      return;
-    }
     window.location.hash = slug;
-    setHashSlug(slug);
+    setPreviewSlug(slug);
+    setPreviewActive(true);
   }
 
   function closePreview() {
@@ -191,8 +231,12 @@ export function PropertyAgencyBuilderView() {
       "",
       `${window.location.pathname}${window.location.search}`
     );
-    setHashSlug(null);
+    setPreviewSlug(null);
+    setBlogPostId(null);
+    setListingId(null);
     setPreviewSite(null);
+    setPreviewError(null);
+    setPreviewActive(false);
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -322,8 +366,15 @@ export function PropertyAgencyBuilderView() {
         bedrooms: 2,
         bathrooms: 1,
         area: 60,
-        type: "Apartment",
+        landArea: 0,
+        type: "Rumah",
+        status: "sale",
+        facilities: [],
+        description: "",
+        specifications: [],
         imageUrl: "",
+        floorPlanUrl: "",
+        galleryUrls: [],
       };
       return {
         ...prev,
@@ -348,7 +399,15 @@ export function PropertyAgencyBuilderView() {
     });
   }
 
-  if (hashSlug) {
+  if (!hashReady) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-foreground/45">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (previewSlug) {
     return (
       <div className="min-h-screen bg-background">
         <div className="sticky top-0 z-50 flex items-center justify-between gap-3 border-b border-foreground/10 bg-background/90 px-4 py-2.5 backdrop-blur-md">
@@ -361,7 +420,7 @@ export function PropertyAgencyBuilderView() {
             {t("propertyAgency.backToBuilder")}
           </button>
           <span className="truncate font-mono text-xs text-foreground/45">
-            #{hashSlug}
+            #{previewSlug}
           </span>
         </div>
         {previewLoading ? (
@@ -380,6 +439,9 @@ export function PropertyAgencyBuilderView() {
             name={previewSite.name}
             config={previewSite.config}
             locale={loc}
+            siteSlug={previewSlug}
+            blogPostId={blogPostId}
+            listingId={listingId}
           />
         ) : null}
       </div>
@@ -535,285 +597,16 @@ export function PropertyAgencyBuilderView() {
                 </div>
               </div>
 
-              <section className="rounded-xl border border-foreground/10 p-5">
-                <h2 className="text-sm font-semibold">{t("propertyAgency.sectionGeneral")}</h2>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <Field label={t("propertyAgency.fieldName")}>
-                    <input
-                      className={inputClass}
-                      value={draft.name}
-                      onChange={(e) =>
-                        setDraft({ ...draft, name: e.target.value })
-                      }
-                    />
-                  </Field>
-                  <Field label={t("propertyAgency.fieldPublished")}>
-                    <select
-                      className={inputClass}
-                      value={draft.isPublished ? "yes" : "no"}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          isPublished: e.target.value === "yes",
-                        })
-                      }
-                    >
-                      <option value="yes">{t("propertyAgency.published")}</option>
-                      <option value="no">{t("propertyAgency.draft")}</option>
-                    </select>
-                  </Field>
-                  <Field label={t("propertyAgency.fieldTheme")}>
-                    <select
-                      className={inputClass}
-                      value={draft.config.theme?.accent ?? "emerald"}
-                      onChange={(e) =>
-                        patchConfig({
-                          theme: {
-                            accent: e.target.value as "emerald" | "blue" | "amber",
-                          },
-                        })
-                      }
-                    >
-                      <option value="emerald">Emerald</option>
-                      <option value="blue">Blue</option>
-                      <option value="amber">Amber</option>
-                    </select>
-                  </Field>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-foreground/10 p-5">
-                <h2 className="text-sm font-semibold">{t("propertyAgency.sectionHero")}</h2>
-                <div className="mt-4 grid gap-4">
-                  <Field label={t("propertyAgency.fieldHeroTitle")}>
-                    <input
-                      className={inputClass}
-                      value={draft.config.hero.title}
-                      onChange={(e) =>
-                        patchConfig({
-                          hero: { ...draft.config.hero, title: e.target.value },
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label={t("propertyAgency.fieldHeroSubtitle")}>
-                    <input
-                      className={inputClass}
-                      value={draft.config.hero.subtitle ?? ""}
-                      onChange={(e) =>
-                        patchConfig({
-                          hero: {
-                            ...draft.config.hero,
-                            subtitle: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label={t("propertyAgency.fieldImageUrl")}>
-                    <ImageUploadField
-                      value={draft.config.hero.imageUrl ?? ""}
-                      onChange={(imageUrl) =>
-                        patchConfig({
-                          hero: { ...draft.config.hero, imageUrl },
-                        })
-                      }
-                      siteSlug={draft.slug}
-                      uploadPrefix="hero"
-                      inputClass={inputClass}
-                      uploadLabel={t("propertyAgency.uploadImage")}
-                      uploadingLabel={t("propertyAgency.uploading")}
-                      orPasteUrlLabel={t("propertyAgency.orPasteUrl")}
-                      notConfiguredLabel={t("propertyAgency.firebaseNotConfigured")}
-                    />
-                  </Field>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-foreground/10 p-5">
-                <h2 className="text-sm font-semibold">{t("propertyAgency.sectionAbout")}</h2>
-                <textarea
-                  className={cn(inputClass, "mt-4 min-h-[100px] resize-y")}
-                  value={draft.config.about ?? ""}
-                  onChange={(e) => patchConfig({ about: e.target.value })}
-                />
-              </section>
-
-              <section className="rounded-xl border border-foreground/10 p-5">
-                <h2 className="text-sm font-semibold">{t("propertyAgency.sectionContact")}</h2>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <Field label={t("propertyAgency.fieldPhone")}>
-                    <input
-                      className={inputClass}
-                      value={draft.config.contact.phone ?? ""}
-                      onChange={(e) =>
-                        patchConfig({
-                          contact: {
-                            ...draft.config.contact,
-                            phone: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label={t("propertyAgency.fieldEmail")}>
-                    <input
-                      className={inputClass}
-                      type="email"
-                      value={draft.config.contact.email ?? ""}
-                      onChange={(e) =>
-                        patchConfig({
-                          contact: {
-                            ...draft.config.contact,
-                            email: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label={t("propertyAgency.fieldAddress")} className="sm:col-span-2">
-                    <input
-                      className={inputClass}
-                      value={draft.config.contact.address ?? ""}
-                      onChange={(e) =>
-                        patchConfig({
-                          contact: {
-                            ...draft.config.contact,
-                            address: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </Field>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-foreground/10 p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-semibold">
-                    {t("propertyAgency.sectionListings")}
-                  </h2>
-                  <Button type="button" size="sm" variant="outline" onClick={addListing}>
-                    <Plus className="h-4 w-4" /> {t("propertyAgency.addListing")}
-                  </Button>
-                </div>
-                <ul className="mt-4 space-y-4">
-                  {(draft.config.listings ?? []).map((listing) => (
-                    <li
-                      key={listing.id}
-                      className="rounded-lg border border-foreground/10 p-4"
-                    >
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label={t("propertyAgency.fieldListingTitle")}>
-                          <input
-                            className={inputClass}
-                            value={listing.title}
-                            onChange={(e) =>
-                              patchListing(listing.id, { title: e.target.value })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldLocation")}>
-                          <input
-                            className={inputClass}
-                            value={listing.location}
-                            onChange={(e) =>
-                              patchListing(listing.id, {
-                                location: e.target.value,
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldPrice")}>
-                          <input
-                            className={inputClass}
-                            type="number"
-                            min={0}
-                            value={listing.price}
-                            onChange={(e) =>
-                              patchListing(listing.id, {
-                                price: Number(e.target.value) || 0,
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldType")}>
-                          <input
-                            className={inputClass}
-                            value={listing.type}
-                            onChange={(e) =>
-                              patchListing(listing.id, { type: e.target.value })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldBedrooms")}>
-                          <input
-                            className={inputClass}
-                            type="number"
-                            min={0}
-                            value={listing.bedrooms}
-                            onChange={(e) =>
-                              patchListing(listing.id, {
-                                bedrooms: Number(e.target.value) || 0,
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldBathrooms")}>
-                          <input
-                            className={inputClass}
-                            type="number"
-                            min={0}
-                            value={listing.bathrooms}
-                            onChange={(e) =>
-                              patchListing(listing.id, {
-                                bathrooms: Number(e.target.value) || 0,
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldArea")}>
-                          <input
-                            className={inputClass}
-                            type="number"
-                            min={0}
-                            value={listing.area}
-                            onChange={(e) =>
-                              patchListing(listing.id, {
-                                area: Number(e.target.value) || 0,
-                              })
-                            }
-                          />
-                        </Field>
-                        <Field label={t("propertyAgency.fieldImageUrl")}>
-                          <ImageUploadField
-                            value={listing.imageUrl ?? ""}
-                            onChange={(imageUrl) =>
-                              patchListing(listing.id, { imageUrl })
-                            }
-                            siteSlug={draft.slug}
-                            uploadPrefix={`listing-${listing.id.slice(0, 8)}`}
-                            inputClass={inputClass}
-                            uploadLabel={t("propertyAgency.uploadImage")}
-                            uploadingLabel={t("propertyAgency.uploading")}
-                            orPasteUrlLabel={t("propertyAgency.orPasteUrl")}
-                            notConfiguredLabel={t("propertyAgency.firebaseNotConfigured")}
-                          />
-                        </Field>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="mt-3"
-                        onClick={() => removeListing(listing.id)}
-                      >
-                        <Trash2 className="h-4 w-4" /> {t("propertyAgency.removeListing")}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <PropertyAgencyConfigEditor
+                draft={draft}
+                t={t}
+                inputClass={inputClass}
+                patchConfig={patchConfig}
+                patchListing={patchListing}
+                addListing={addListing}
+                removeListing={removeListing}
+                setDraft={setDraft}
+              />
             </div>
           )}
         </div>

@@ -6,7 +6,14 @@ import {
 } from "@/lib/auth-demo/session";
 
 export function parseAuthDemoRole(role: string): AuthDemoRole | null {
-  if (role === "admin" || role === "editor" || role === "viewer") return role;
+  if (
+    role === "superadmin" ||
+    role === "admin" ||
+    role === "editor" ||
+    role === "viewer"
+  ) {
+    return role;
+  }
   return null;
 }
 

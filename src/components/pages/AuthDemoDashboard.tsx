@@ -5,11 +5,14 @@ import {
   Activity,
   BarChart3,
   CheckCircle2,
+  Crown,
   FileText,
   LayoutDashboard,
+  Loader2,
   Lock,
   LogOut,
   Pencil,
+  Save,
   Settings,
   Shield,
   ShieldCheck,
@@ -17,8 +20,18 @@ import {
   Users,
   Eye,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { AuthDemoRole, AuthDemoSession } from "@/lib/auth-demo/constants";
+import {
+  AUTH_DEMO_MODULE_IDS,
+  MANAGEABLE_ROLES,
+  type AuthDemoModuleId,
+  type ManageableRole,
+  type PermissionMatrix,
+  countAllowedModules,
+  hasModuleAccess,
+} from "@/lib/auth-demo/permissions";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +39,12 @@ const ROLE_STYLES: Record<
   AuthDemoRole,
   { badge: string; ring: string; gradient: string; icon: typeof Shield }
 > = {
+  superadmin: {
+    badge: "bg-amber-500/15 text-amber-600 border-amber-500/35 dark:text-amber-300",
+    ring: "ring-amber-500/30",
+    gradient: "from-amber-500/20 via-primary/10 to-transparent",
+    icon: Crown,
+  },
   admin: {
     badge: "bg-purple-500/15 text-purple-600 border-purple-500/35 dark:text-purple-300",
     ring: "ring-purple-500/30",
@@ -46,51 +65,48 @@ const ROLE_STYLES: Record<
   },
 };
 
-const MODULES = [
+const MODULE_META: {
+  id: AuthDemoModuleId;
+  icon: typeof BarChart3;
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+  stat: string;
+}[] = [
   {
     id: "analytics",
-    minRole: "viewer" as AuthDemoRole,
     icon: BarChart3,
-    titleKey: "authDemo.panel.analytics" as const,
-    descKey: "authDemo.panel.analyticsDesc" as const,
+    titleKey: "authDemo.panel.analytics",
+    descKey: "authDemo.panel.analyticsDesc",
     stat: "12.4k",
   },
   {
     id: "content",
-    minRole: "editor" as AuthDemoRole,
     icon: FileText,
-    titleKey: "authDemo.panel.content" as const,
-    descKey: "authDemo.panel.contentDesc" as const,
+    titleKey: "authDemo.panel.content",
+    descKey: "authDemo.panel.contentDesc",
     stat: "86",
   },
   {
     id: "users",
-    minRole: "admin" as AuthDemoRole,
     icon: Users,
-    titleKey: "authDemo.panel.users" as const,
-    descKey: "authDemo.panel.usersDesc" as const,
+    titleKey: "authDemo.panel.users",
+    descKey: "authDemo.panel.usersDesc",
     stat: "24",
   },
   {
     id: "settings",
-    minRole: "admin" as AuthDemoRole,
     icon: Settings,
-    titleKey: "authDemo.panel.settings" as const,
-    descKey: "authDemo.panel.settingsDesc" as const,
+    titleKey: "authDemo.panel.settings",
+    descKey: "authDemo.panel.settingsDesc",
     stat: "—",
   },
-] as const;
+];
 
 const ACTIVITY_KEYS = [
   "authDemo.activity.1",
   "authDemo.activity.2",
   "authDemo.activity.3",
 ] as const;
-
-function canAccess(role: AuthDemoRole, minRole: AuthDemoRole) {
-  const order: AuthDemoRole[] = ["viewer", "editor", "admin"];
-  return order.indexOf(role) >= order.indexOf(minRole);
-}
 
 function initials(name: string) {
   return name
@@ -108,11 +124,81 @@ type Props = {
 };
 
 export function AuthDemoDashboard({ user, onLogout, t }: Props) {
+  const [matrix, setMatrix] = useState<PermissionMatrix | null>(null);
+  const [draft, setDraft] = useState<PermissionMatrix | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
+  const [loadingPerms, setLoadingPerms] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [permError, setPermError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const loadPermissions = useCallback(async () => {
+    setLoadingPerms(true);
+    setPermError(null);
+    try {
+      const res = await fetch("/api/projects/auth/permissions");
+      if (!res.ok) throw new Error("Failed to load permissions");
+      const data = await res.json();
+      setMatrix(data.matrix);
+      setDraft(data.matrix);
+      setCanEdit(Boolean(data.canEdit));
+    } catch {
+      setPermError(t("authDemo.permissionsLoadError"));
+    } finally {
+      setLoadingPerms(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadPermissions();
+  }, [loadPermissions]);
+
   const style = ROLE_STYLES[user.role];
   const RoleIcon = style.icon;
-  const allowedCount = MODULES.filter((m) =>
-    canAccess(user.role, m.minRole)
-  ).length;
+  const activeMatrix = matrix ?? draft;
+  const allowedCount = activeMatrix
+    ? countAllowedModules(activeMatrix, user.role)
+    : 0;
+
+  async function handleSavePermissions() {
+    if (!draft || !canEdit) return;
+    setSaving(true);
+    setPermError(null);
+    setSaveSuccess(false);
+    try {
+      const res = await fetch("/api/projects/auth/permissions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matrix: draft }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed");
+      setMatrix(data.matrix);
+      setDraft(data.matrix);
+      setSaveSuccess(true);
+    } catch (e) {
+      setPermError(
+        e instanceof Error ? e.message : t("authDemo.permissionsSaveError")
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function togglePermission(role: ManageableRole, moduleId: AuthDemoModuleId) {
+    if (!canEdit || !draft) return;
+    setDraft((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [role]: {
+          ...prev[role],
+          [moduleId]: !prev[role][moduleId],
+        },
+      };
+    });
+    setSaveSuccess(false);
+  }
 
   const stats = [
     {
@@ -153,6 +239,13 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
     hidden: { opacity: 0, y: 12 },
     show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
   };
+
+  const displayMatrix = canEdit ? draft : matrix;
+  const isDirty =
+    canEdit &&
+    draft &&
+    matrix &&
+    JSON.stringify(draft) !== JSON.stringify(matrix);
 
   return (
     <motion.div
@@ -242,8 +335,10 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
             <p className="text-xs text-foreground/50">{t("authDemo.rbacHint")}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {MODULES.map((panel) => {
-              const allowed = canAccess(user.role, panel.minRole);
+            {MODULE_META.map((panel) => {
+              const allowed =
+                displayMatrix &&
+                hasModuleAccess(displayMatrix, user.role, panel.id);
               const Icon = panel.icon;
               return (
                 <div
@@ -291,10 +386,7 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
                     >
                       {allowed
                         ? t("authDemo.accessGranted")
-                        : t("authDemo.accessDenied").replace(
-                            "{role}",
-                            panel.minRole
-                          )}
+                        : t("authDemo.accessDeniedRole")}
                     </span>
                     {allowed && panel.stat !== "—" && (
                       <span className="text-xs font-mono text-foreground/45">
@@ -310,18 +402,56 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
 
         <motion.div variants={item} className="space-y-4">
           <div className="rounded-xl border border-foreground/10 p-4">
-            <h3 className="text-sm font-semibold">
-              {t("authDemo.permissionsTitle")}
-            </h3>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="text-foreground/45">
-                    <th className="pb-2 pr-2 font-medium">
-                      {t("authDemo.permModule")}
-                    </th>
-                    {(["viewer", "editor", "admin"] as AuthDemoRole[]).map(
-                      (r) => (
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold">
+                  {t("authDemo.permissionsTitle")}
+                </h3>
+                {canEdit ? (
+                  <p className="mt-1 text-xs text-foreground/50">
+                    {t("authDemo.permissionsEditHint")}
+                  </p>
+                ) : null}
+              </div>
+              {canEdit && isDirty ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={saving || !draft}
+                  onClick={handleSavePermissions}
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  {t("authDemo.savePermissions")}
+                </Button>
+              ) : null}
+            </div>
+
+            {permError ? (
+              <p className="mt-3 text-xs text-red-500">{permError}</p>
+            ) : null}
+            {saveSuccess ? (
+              <p className="mt-3 text-xs text-primary-text">
+                {t("authDemo.permissionsSaved")}
+              </p>
+            ) : null}
+
+            {loadingPerms ? (
+              <div className="mt-6 flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-foreground/40" />
+              </div>
+            ) : displayMatrix ? (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="text-foreground/45">
+                      <th className="pb-2 pr-2 font-medium">
+                        {t("authDemo.permModule")}
+                      </th>
+                      {MANAGEABLE_ROLES.map((r) => (
                         <th
                           key={r}
                           className={cn(
@@ -331,45 +461,66 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
                         >
                           {r}
                         </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {MODULES.map((m) => (
-                    <tr
-                      key={m.id}
-                      className="border-t border-foreground/5"
-                    >
-                      <td className="py-2 pr-2 font-medium">
-                        {t(m.titleKey)}
-                      </td>
-                      {(["viewer", "editor", "admin"] as AuthDemoRole[]).map(
-                        (r) => {
-                          const ok = canAccess(r, m.minRole);
-                          return (
-                            <td key={r} className="py-2 px-1 text-center">
-                              {ok ? (
-                                <CheckCircle2
-                                  className={cn(
-                                    "mx-auto h-3.5 w-3.5",
-                                    user.role === r
-                                      ? "text-primary-text"
-                                      : "text-foreground/35"
-                                  )}
-                                />
-                              ) : (
-                                <span className="text-foreground/25">—</span>
-                              )}
-                            </td>
-                          );
-                        }
-                      )}
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {AUTH_DEMO_MODULE_IDS.map((moduleId) => {
+                      const meta = MODULE_META.find((m) => m.id === moduleId)!;
+                      return (
+                        <tr
+                          key={moduleId}
+                          className="border-t border-foreground/5"
+                        >
+                          <td className="py-2 pr-2 font-medium">
+                            {t(meta.titleKey)}
+                          </td>
+                          {MANAGEABLE_ROLES.map((r) => {
+                            const ok = displayMatrix[r][moduleId];
+                            return (
+                              <td key={r} className="py-2 px-1 text-center">
+                                {canEdit ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      togglePermission(r, moduleId)
+                                    }
+                                    className={cn(
+                                      "mx-auto flex h-7 w-7 items-center justify-center rounded-md border transition-colors",
+                                      ok
+                                        ? "border-primary/40 bg-primary-soft text-primary-text"
+                                        : "border-foreground/10 text-foreground/25 hover:border-foreground/20"
+                                    )}
+                                    aria-label={`${r} ${moduleId}`}
+                                  >
+                                    {ok ? (
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                    ) : (
+                                      <span>—</span>
+                                    )}
+                                  </button>
+                                ) : ok ? (
+                                  <CheckCircle2
+                                    className={cn(
+                                      "mx-auto h-3.5 w-3.5",
+                                      user.role === r
+                                        ? "text-primary-text"
+                                        : "text-foreground/35"
+                                    )}
+                                  />
+                                ) : (
+                                  <span className="text-foreground/25">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-xl border border-foreground/10 p-4">

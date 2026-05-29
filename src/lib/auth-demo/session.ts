@@ -41,7 +41,10 @@ export async function verifyAuthDemoToken(
       !Number.isFinite(id) ||
       typeof email !== "string" ||
       typeof name !== "string" ||
-      (role !== "admin" && role !== "editor" && role !== "viewer")
+      (role !== "superadmin" &&
+        role !== "admin" &&
+        role !== "editor" &&
+        role !== "viewer")
     ) {
       return null;
     }

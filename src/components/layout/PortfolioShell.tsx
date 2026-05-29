@@ -13,16 +13,14 @@ type Props = {
 export function PortfolioShell({ children, defaultModelRef }: Props) {
   const { active: previewActive } = usePropertyAgencyPreview();
 
-  if (previewActive) {
-    return <main className="flex-1">{children}</main>;
-  }
-
   return (
     <>
-      <Navbar />
+      {!previewActive ? <Navbar /> : null}
       <main className="flex-1">{children}</main>
-      <Footer />
-      <ChatWidget defaultModelRef={defaultModelRef} />
+      {!previewActive ? <Footer /> : null}
+      {!previewActive ? (
+        <ChatWidget defaultModelRef={defaultModelRef} />
+      ) : null}
     </>
   );
 }

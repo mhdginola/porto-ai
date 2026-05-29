@@ -19,6 +19,11 @@ import { AuthDemoDashboard } from "@/components/pages/AuthDemoDashboard";
 import { cn } from "@/lib/utils";
 
 const DEMO_ACCOUNTS = [
+  {
+    role: "superadmin" as const,
+    email: "superadmin@demo.local",
+    password: "demo123",
+  },
   { role: "admin" as const, email: "admin@demo.local", password: "demo123" },
   { role: "editor" as const, email: "editor@demo.local", password: "demo123" },
   { role: "viewer" as const, email: "viewer@demo.local", password: "demo123" },
