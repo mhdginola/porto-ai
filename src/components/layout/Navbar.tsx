@@ -43,9 +43,12 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-foreground/5",
-                  active && "bg-foreground/5 font-medium"
+                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  active
+                    ? "border border-primary/40 bg-primary-soft font-semibold text-primary-text shadow-sm shadow-primary/15"
+                    : "text-foreground/60 hover:bg-foreground/5 hover:text-foreground"
                 )}
+                aria-current={active ? "page" : undefined}
               >
                 {t(item.labelKey)}
               </Link>

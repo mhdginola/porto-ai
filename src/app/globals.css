@@ -40,6 +40,31 @@ html {
   scroll-behavior: smooth;
 }
 
+@keyframes nav-progress-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.nav-progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--primary-foreground) 55%, transparent) 50%,
+    transparent 100%
+  );
+  animation: nav-progress-shimmer 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress-shimmer {
+    animation: none;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

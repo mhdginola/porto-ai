@@ -6,6 +6,7 @@ import { LocaleProvider } from "@/components/layout/LocaleProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ai/ChatWidget";
+import { NavigationProgressShell } from "@/components/layout/NavigationProgressShell";
 import { siteConfig } from "@/lib/site";
 import { getDefaultModelRef } from "@/lib/ai";
 
@@ -59,6 +60,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <NavigationProgressShell />
             <Navbar />
             <main className="flex-1">{children}</main>
             <Footer />

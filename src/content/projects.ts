@@ -217,6 +217,27 @@ admin sees everything, editor can manage content, viewer is read-only.`,
     year: 2026,
     liveUrl: "/projects/auth-demo",
   },
+  {
+    slug: "marketplace-demo",
+    title: "Marketplace SaaS Dashboard",
+    summary:
+      "Seller admin UI with revenue charts, product catalog, and orders — all hardcoded demo data.",
+    description: `Full marketplace-style SaaS dashboard built for portfolio demonstration.
+Includes KPI cards, monthly revenue chart, category breakdown, product grid, and
+order tables. All metrics and records are hardcoded — no backend required.`,
+    tags: ["Next.js", "TypeScript", "Tailwind CSS", "Dashboard", "SaaS"],
+    visibility: "public",
+    category: "saas",
+    role: "Creator",
+    highlights: [
+      "Overview, Products, and Orders views with sidebar navigation",
+      "IDR-formatted stats and mock month-over-month revenue bars",
+      "Searchable product catalog with stock and sales columns",
+      "Order status badges (paid, pending, shipped, cancelled)",
+    ],
+    year: 2026,
+    liveUrl: "/projects/marketplace-demo",
+  },
 ];
 
 export const allProjects: Project[] = [...publicProjects, ...privateProjects];

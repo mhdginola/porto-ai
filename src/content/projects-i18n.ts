@@ -222,6 +222,39 @@ yang dipakai staf operasional setiap hari.`,
       ],
     },
   },
+  "marketplace-demo": {
+    title: {
+      en: "Marketplace SaaS Dashboard",
+      id: "Dashboard SaaS Marketplace",
+    },
+    summary: {
+      en: "Seller admin UI with revenue charts, product catalog, and orders — all hardcoded demo data.",
+      id: "UI admin penjual dengan grafik pendapatan, katalog produk, dan pesanan — data demo.",
+    },
+    description: {
+      en: `Full marketplace-style SaaS dashboard built for portfolio demonstration.
+Includes KPI cards, monthly revenue chart, category breakdown, product grid, and
+order tables. All metrics and records are hardcoded — no backend required.`,
+      id: `Dashboard SaaS bergaya marketplace untuk portfolio. Termasuk kartu KPI,
+grafik pendapatan bulanan, breakdown kategori, grid produk, dan tabel pesanan.
+Semua metrik dan data di-hardcode — tanpa backend.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "Overview, Products, and Orders views with sidebar navigation",
+        "IDR-formatted stats and mock month-over-month revenue bars",
+        "Searchable product catalog with stock and sales columns",
+        "Order status badges (paid, pending, shipped, cancelled)",
+      ],
+      id: [
+        "Tampilan Ringkasan, Produk, dan Pesanan dengan navigasi sidebar",
+        "Statistik format IDR dan bar pendapatan bulanan",
+        "Katalog produk dengan pencarian, stok, dan penjualan",
+        "Badge status pesanan (lunas, menunggu, dikirim, batal)",
+      ],
+    },
+  },
   "auth-demo": {
     title: {
       en: "Simple Auth & Roles Demo",

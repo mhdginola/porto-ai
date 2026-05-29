@@ -5,7 +5,12 @@ import { getProjectBySlug, getProjectsByVisibility } from "@/content/projects";
 
 type Params = { slug: string };
 
-const STATIC_DEMO_SLUGS = new Set(["crud-demo", "auth-demo", "porto-ai"]);
+const STATIC_DEMO_SLUGS = new Set([
+  "crud-demo",
+  "auth-demo",
+  "porto-ai",
+  "marketplace-demo",
+]);
 
 export function generateStaticParams() {
   return getProjectsByVisibility("public")

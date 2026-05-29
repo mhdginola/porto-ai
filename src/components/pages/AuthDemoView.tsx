@@ -1,25 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Loader2,
-  LogOut,
-  Shield,
-  ShieldCheck,
-  Eye,
-  Pencil,
-  Users,
-  Settings,
-  BarChart3,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FormField } from "@/components/ui/FormField";
-import type { AuthDemoRole, AuthDemoSession } from "@/lib/auth-demo/constants";
+import type { AuthDemoSession } from "@/lib/auth-demo/constants";
 import {
   type AuthFieldErrors,
   type AuthFieldKey,
@@ -27,6 +15,7 @@ import {
   validateLoginForm,
   validateSignupForm,
 } from "@/lib/auth-demo/validate-form";
+import { AuthDemoDashboard } from "@/components/pages/AuthDemoDashboard";
 import { cn } from "@/lib/utils";
 
 const DEMO_ACCOUNTS = [
@@ -34,29 +23,6 @@ const DEMO_ACCOUNTS = [
   { role: "editor" as const, email: "editor@demo.local", password: "demo123" },
   { role: "viewer" as const, email: "viewer@demo.local", password: "demo123" },
 ];
-
-const ROLE_STYLES: Record<
-  AuthDemoRole,
-  { badge: string; icon: typeof Shield }
-> = {
-  admin: {
-    badge: "bg-purple-500/15 text-purple-600 border-purple-500/30 dark:text-purple-400",
-    icon: ShieldCheck,
-  },
-  editor: {
-    badge: "bg-blue-500/15 text-blue-600 border-blue-500/30 dark:text-blue-400",
-    icon: Pencil,
-  },
-  viewer: {
-    badge: "bg-foreground/10 text-foreground/70 border-foreground/20",
-    icon: Eye,
-  },
-};
-
-function canAccess(role: AuthDemoRole, minRole: AuthDemoRole): boolean {
-  const order: AuthDemoRole[] = ["viewer", "editor", "admin"];
-  return order.indexOf(role) >= order.indexOf(minRole);
-}
 
 export function AuthDemoView() {
   const { t } = useLocale();
@@ -376,133 +342,8 @@ export function AuthDemoView() {
           </div>
         </div>
       ) : (
-        <Dashboard user={user} onLogout={handleLogout} t={t} />
+        <AuthDemoDashboard user={user} onLogout={handleLogout} t={t} />
       )}
     </Container>
-  );
-}
-
-function Dashboard({
-  user,
-  onLogout,
-  t,
-}: {
-  user: AuthDemoSession;
-  onLogout: () => void;
-  t: (key: import("@/lib/i18n/translations").TranslationKey) => string;
-}) {
-  const style = ROLE_STYLES[user.role];
-  const RoleIcon = style.icon;
-
-  const panels = [
-    {
-      id: "analytics",
-      minRole: "viewer" as AuthDemoRole,
-      icon: BarChart3,
-      titleKey: "authDemo.panel.analytics" as const,
-      descKey: "authDemo.panel.analyticsDesc" as const,
-    },
-    {
-      id: "content",
-      minRole: "editor" as AuthDemoRole,
-      icon: Pencil,
-      titleKey: "authDemo.panel.content" as const,
-      descKey: "authDemo.panel.contentDesc" as const,
-    },
-    {
-      id: "users",
-      minRole: "admin" as AuthDemoRole,
-      icon: Users,
-      titleKey: "authDemo.panel.users" as const,
-      descKey: "authDemo.panel.usersDesc" as const,
-    },
-    {
-      id: "settings",
-      minRole: "admin" as AuthDemoRole,
-      icon: Settings,
-      titleKey: "authDemo.panel.settings" as const,
-      descKey: "authDemo.panel.settingsDesc" as const,
-    },
-  ];
-
-  return (
-    <div className="mt-10">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-foreground/10 p-4">
-        <div>
-          <p className="text-sm text-foreground/55">{t("authDemo.signedInAs")}</p>
-          <p className="mt-0.5 font-semibold">{user.name}</p>
-          <p className="text-xs text-foreground/50">{user.email}</p>
-          <span
-            className={cn(
-              "mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-              style.badge
-            )}
-          >
-            <RoleIcon className="h-3 w-3" />
-            {user.role}
-          </span>
-        </div>
-        <Button type="button" variant="outline" size="sm" onClick={onLogout}>
-          <LogOut className="h-4 w-4" /> {t("authDemo.signOut")}
-        </Button>
-      </div>
-
-      <p className="mt-6 text-sm text-foreground/60">{t("authDemo.rbacHint")}</p>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {panels.map((panel) => {
-          const allowed = canAccess(user.role, panel.minRole);
-          const Icon = panel.icon;
-          return (
-            <div
-              key={panel.id}
-              className={cn(
-                "rounded-xl border p-4 transition-opacity",
-                allowed
-                  ? "border-foreground/10"
-                  : "border-foreground/5 opacity-45"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "rounded-lg p-2",
-                    allowed ? "bg-primary-soft" : "bg-foreground/5"
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "h-4 w-4",
-                      allowed ? "text-primary-text" : "text-foreground/40"
-                    )}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm">{t(panel.titleKey)}</p>
-                  <p className="mt-1 text-xs text-foreground/55">
-                    {t(panel.descKey)}
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-2 text-[10px] font-medium uppercase tracking-wide",
-                      allowed
-                        ? "text-primary-text"
-                        : "text-foreground/40"
-                    )}
-                  >
-                    {allowed
-                      ? t("authDemo.accessGranted")
-                      : t("authDemo.accessDenied").replace(
-                          "{role}",
-                          panel.minRole
-                        )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
