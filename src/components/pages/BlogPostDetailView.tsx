@@ -5,14 +5,12 @@ import { ArrowLeft, CalendarDays, Clock } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { Container } from "@/components/ui/Container";
 import { TechBadge } from "@/components/ui/TechBadge";
+import { MarkdownLite } from "@/components/pages/markdown-lite";
 import type { BlogPost } from "@/content/blog";
 
 export function BlogPostDetailView({ post }: { post: BlogPost }) {
   const { locale, t } = useLocale();
   const dateLocale = locale === "id" ? "id-ID" : "en-US";
-
-  // Lightweight block renderer: "## " lines become headings, the rest paragraphs.
-  const blocks = post.body.split(/\n\n+/);
 
   return (
     <Container className="py-16">
@@ -48,14 +46,8 @@ export function BlogPostDetailView({ post }: { post: BlogPost }) {
         ))}
       </div>
 
-      <article className="prose prose-neutral dark:prose-invert mt-10 max-w-2xl">
-        {blocks.map((block, i) =>
-          block.startsWith("## ") ? (
-            <h2 key={i}>{block.replace(/^##\s+/, "")}</h2>
-          ) : (
-            <p key={i}>{block}</p>
-          )
-        )}
+      <article>
+        <MarkdownLite body={post.body} />
       </article>
     </Container>
   );

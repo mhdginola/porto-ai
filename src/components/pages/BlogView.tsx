@@ -27,11 +27,11 @@ export function BlogView() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group flex flex-col gap-3 rounded-xl border border-foreground/10 p-5 transition-colors hover:bg-foreground/5"
+              className="card-surface group flex flex-col gap-3 rounded-xl p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight">
+                  <h2 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-primary-text">
                     {post.title}
                   </h2>
                   <p className="mt-1 text-sm text-foreground/60">

@@ -40,6 +40,65 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Fading grid backdrop for hero / section headers. */
+.bg-grid-fade {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--foreground) 7%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 75% 60% at 50% 0%,
+    #000 30%,
+    transparent 80%
+  );
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 0%, #000 30%, transparent 80%);
+}
+
+/* Subtle two-tone gradient text for headings. */
+.text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--foreground),
+    color-mix(in oklab, var(--foreground) 55%, transparent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Reusable card surface with a lift + accent on hover.
+   Apply your own border-radius (e.g. Tailwind `rounded-xl`) on the element. */
+.card-surface {
+  border: 1px solid color-mix(in oklab, var(--foreground) 10%, transparent);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card-surface:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  background-color: color-mix(in oklab, var(--foreground) 4%, transparent);
+  box-shadow: 0 14px 40px -12px color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-surface,
+  .card-surface:hover {
+    transform: none;
+  }
+}
+
 @keyframes nav-progress-shimmer {
   0% {
     transform: translateX(-120%);

@@ -27,16 +27,16 @@ export function ProjectCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-3 rounded-xl border border-foreground/10 p-5 transition-colors hover:bg-foreground/5"
+      className="card-surface group flex flex-col gap-3 rounded-xl p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold tracking-tight">
+          <h3 className="text-base font-semibold tracking-tight transition-colors group-hover:text-primary-text">
             {localized.title}
           </h3>
           <p className="mt-1 text-sm text-foreground/60">{localized.summary}</p>
         </div>
-        <ArrowUpRight className="h-4 w-4 text-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-text" />
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary-text" />
       </div>
 
       <div className="mt-auto flex flex-wrap gap-1.5">

@@ -24,12 +24,13 @@ export function HomeSections() {
     <Container className="space-y-20 pb-16">
       <section>
         <div className="mb-6 flex items-end justify-between">
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+            <span className="h-6 w-1 rounded-full bg-primary" aria-hidden />
             {t("home.featuredProjects")}
           </h2>
           <Link
             href="/projects"
-            className="flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground"
+            className="flex items-center gap-1 text-sm text-foreground/60 transition-colors hover:text-primary-text"
           >
             {t("home.viewAll")} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -42,7 +43,8 @@ export function HomeSections() {
       </section>
 
       <section>
-        <h2 className="mb-6 text-2xl font-semibold tracking-tight">
+        <h2 className="mb-6 flex items-center gap-3 text-2xl font-semibold tracking-tight">
+          <span className="h-6 w-1 rounded-full bg-primary" aria-hidden />
           {t("home.techTitle")}
         </h2>
         <div className="flex flex-wrap gap-2">

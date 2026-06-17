@@ -47,13 +47,28 @@ export function Navbar() {
   const pathname = usePathname();
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-foreground/10 bg-background/70 backdrop-blur">
+    <header
+      className={cn(
+        "sticky top-0 z-40 w-full border-b backdrop-blur transition-colors",
+        scrolled
+          ? "border-foreground/10 bg-background/80 shadow-sm shadow-black/5"
+          : "border-transparent bg-background/60"
+      )}
+    >
       <Container className="flex h-14 items-center justify-between gap-3">
         <Link href="/" className="shrink-0 font-semibold tracking-tight">
           {siteConfig.name.split(" ")[0]}
