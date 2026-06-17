@@ -327,6 +327,35 @@ const en = {
   "playground.demo.sentiment.title": "Sentiment Analyzer",
   "playground.demo.sentiment.desc":
     "Classify text into emotion + intent in real time.",
+  "playground.demo.fitCheck.title": "Fit Check (Recruiter Mode)",
+  "playground.demo.fitCheck.desc":
+    "Paste a job description — AI scores how well I fit, with strengths, gaps, and a tailored pitch.",
+  "fitCheck.title": "Fit Check",
+  "fitCheck.subtitle":
+    "Paste a job description and the AI scores how well I fit the role — grounded in my CV, with strengths, gaps, and a tailored pitch.",
+  "fitCheck.yourJd": "Job description",
+  "fitCheck.placeholder": "Paste the full job description here…",
+  "fitCheck.analyze": "Analyze fit",
+  "fitCheck.analyzing": "Analyzing…",
+  "fitCheck.stop": "Stop",
+  "fitCheck.tooLong": "Too long (max 8,000 chars)",
+  "fitCheck.emptyHint": "Paste a job description to see the fit assessment.",
+  "fitCheck.matchScore": "Match score",
+  "fitCheck.strengths": "Strengths",
+  "fitCheck.gaps": "Gaps",
+  "fitCheck.keyTech": "Matching tech",
+  "fitCheck.pitch": "Tailored pitch",
+  "fitCheck.disclaimer":
+    "AI-generated assessment based on Ginola's CV. May contain errors — verify before relying on it.",
+  "fitCheck.error": "Couldn't analyze the job description",
+  "fitCheck.unparseable":
+    "The model returned an unreadable result. Try again, or switch to a stronger model (e.g. Groq) from the picker.",
+  "fitCheck.exampleGoBackend": "Go backend (fintech)",
+  "fitCheck.exampleAiFullstack": "Full-stack AI",
+  "fitCheck.verdict.strong": "Strong fit",
+  "fitCheck.verdict.good": "Good fit",
+  "fitCheck.verdict.partial": "Partial fit",
+  "fitCheck.verdict.stretch": "Stretch",
   "blog.title": "Blog",
   "blog.subtitle":
     "Notes on shipping AI-native apps, clean architecture, and the systems I've built in production.",
@@ -785,6 +814,35 @@ const id: Record<keyof typeof en, string> = {
   "playground.demo.sentiment.title": "Sentiment Analyzer",
   "playground.demo.sentiment.desc":
     "Klasifikasikan teks ke emosi + intent secara real time.",
+  "playground.demo.fitCheck.title": "Fit Check (Mode Rekruter)",
+  "playground.demo.fitCheck.desc":
+    "Tempel deskripsi pekerjaan — AI menilai kecocokan saya, lengkap dengan kelebihan, kekurangan, dan pitch yang disesuaikan.",
+  "fitCheck.title": "Fit Check",
+  "fitCheck.subtitle":
+    "Tempel deskripsi pekerjaan dan AI menilai seberapa cocok saya untuk peran itu — berdasarkan CV saya, lengkap dengan kelebihan, kekurangan, dan pitch yang disesuaikan.",
+  "fitCheck.yourJd": "Deskripsi pekerjaan",
+  "fitCheck.placeholder": "Tempel deskripsi pekerjaan lengkap di sini…",
+  "fitCheck.analyze": "Analisis kecocokan",
+  "fitCheck.analyzing": "Menganalisis…",
+  "fitCheck.stop": "Berhenti",
+  "fitCheck.tooLong": "Terlalu panjang (maks 8.000 karakter)",
+  "fitCheck.emptyHint": "Tempel deskripsi pekerjaan untuk melihat penilaian kecocokan.",
+  "fitCheck.matchScore": "Skor kecocokan",
+  "fitCheck.strengths": "Kelebihan",
+  "fitCheck.gaps": "Kekurangan",
+  "fitCheck.keyTech": "Teknologi yang cocok",
+  "fitCheck.pitch": "Pitch yang disesuaikan",
+  "fitCheck.disclaimer":
+    "Penilaian dibuat AI berdasarkan CV Ginola. Bisa keliru — verifikasi sebelum dijadikan acuan.",
+  "fitCheck.error": "Gagal menganalisis deskripsi pekerjaan",
+  "fitCheck.unparseable":
+    "Model mengembalikan hasil yang tidak terbaca. Coba lagi, atau pilih model yang lebih kuat (mis. Groq) dari pemilih model.",
+  "fitCheck.exampleGoBackend": "Backend Go (fintech)",
+  "fitCheck.exampleAiFullstack": "Full-stack AI",
+  "fitCheck.verdict.strong": "Sangat cocok",
+  "fitCheck.verdict.good": "Cocok",
+  "fitCheck.verdict.partial": "Cukup cocok",
+  "fitCheck.verdict.stretch": "Kurang cocok",
   "blog.title": "Blog",
   "blog.subtitle":
     "Catatan tentang membangun aplikasi AI-native, clean architecture, dan sistem yang saya bangun di produksi.",
