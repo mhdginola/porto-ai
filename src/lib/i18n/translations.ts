@@ -327,7 +327,10 @@ const en = {
     "Classify text into emotion + intent in real time.",
   "blog.title": "Blog",
   "blog.subtitle":
-    "Notes on shipping AI-native apps, performance, and developer experience. Coming soon — connect MDX or a CMS here.",
+    "Notes on shipping AI-native apps, clean architecture, and the systems I've built in production.",
+  "blog.minRead": "min read",
+  "blog.backToBlog": "Back to blog",
+  "blog.empty": "No posts yet — check back soon.",
   "common.backToPlayground": "Back to playground",
   "common.live": "Live",
   "common.thinking": "Thinking…",
@@ -780,7 +783,10 @@ const id: Record<keyof typeof en, string> = {
     "Klasifikasikan teks ke emosi + intent secara real time.",
   "blog.title": "Blog",
   "blog.subtitle":
-    "Catatan tentang membangun aplikasi AI-native, performa, dan developer experience. Segera hadir — hubungkan MDX atau CMS di sini.",
+    "Catatan tentang membangun aplikasi AI-native, clean architecture, dan sistem yang saya bangun di produksi.",
+  "blog.minRead": "menit baca",
+  "blog.backToBlog": "Kembali ke blog",
+  "blog.empty": "Belum ada tulisan — nanti cek lagi ya.",
   "common.backToPlayground": "Kembali ke playground",
   "common.live": "Live",
   "common.thinking": "Memproses…",

@@ -11,6 +11,7 @@ import {
   publications,
 } from "@/content/profile";
 import { allProjects } from "@/content/projects";
+import { blogPosts } from "@/content/blog";
 
 function chunkText(text: string, maxLen = 600, overlap = 80): string[] {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -129,6 +130,25 @@ function buildDocs(): DraftDoc[] {
           category: project.category,
           tags: project.tags,
           client: project.client,
+        }),
+      });
+    });
+  }
+
+  for (const post of blogPosts) {
+    const header = `Blog post: "${post.title}" (${post.date}). ${post.summary}`;
+    const body = `${post.body} Tags: ${post.tags.join(", ")}.`;
+    chunkText(`${header}\n${body}`).forEach((content, i) => {
+      docs.push({
+        source: "blog",
+        sourceId: `${post.slug}-${i}`,
+        title: post.title,
+        url: `/blog/${post.slug}`,
+        content,
+        metadata: JSON.stringify({
+          slug: post.slug,
+          date: post.date,
+          tags: post.tags,
         }),
       });
     });

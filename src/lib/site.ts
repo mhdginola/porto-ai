@@ -4,11 +4,9 @@ export const siteConfig = {
   description:
     "Full Stack Developer building scalable, secure web apps — increasingly powered by AI. Based in Jakarta/Tangerang, working remote-first.",
   url: "https://ginola.dev",
-  ogImage: "/og.png",
   links: {
     github: "https://github.com/mhdginola",
     linkedin: "https://linkedin.com/in/ginola-ginola",
-    twitter: "https://github.com/mhdginola",
     email: "mhdginola@gmail.com",
     phone: "+62 822-7969-9303",
   },

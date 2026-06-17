@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Github, Linkedin, Mail, Twitter } from "lucide-react";
+import { Github, Linkedin, Mail } from "lucide-react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { siteConfig } from "@/lib/site";
 import { Container } from "@/components/ui/Container";
@@ -29,13 +29,6 @@ export function Footer() {
             className="hover:text-foreground"
           >
             <Linkedin className="h-4 w-4" />
-          </Link>
-          <Link
-            href={siteConfig.links.twitter}
-            aria-label="Twitter"
-            className="hover:text-foreground"
-          >
-            <Twitter className="h-4 w-4" />
           </Link>
           <Link
             href={`mailto:${siteConfig.links.email}`}
