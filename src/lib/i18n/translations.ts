@@ -330,6 +330,23 @@ const en = {
   "playground.demo.fitCheck.title": "Fit Check (Recruiter Mode)",
   "playground.demo.fitCheck.desc":
     "Paste a job description — AI scores how well I fit, with strengths, gaps, and a tailored pitch.",
+  "playground.demo.agent.title": "Ask the Agent",
+  "playground.demo.agent.desc":
+    "A tool-calling AI agent that answers about me by querying my projects, experience, and CV — live tool calls shown.",
+  "agent.title": "Ask the Agent",
+  "agent.subtitle":
+    "An AI agent that answers questions about me by calling real tools — projects, experience, skills, availability, and semantic CV search. Watch the tool calls happen live.",
+  "agent.placeholder": "Ask about my projects, experience, or availability…",
+  "agent.send": "Send",
+  "agent.stop": "Stop",
+  "agent.thinking": "Thinking…",
+  "agent.emptyHint":
+    "Ask anything about Ginola — the agent picks the right tools to answer, and you'll see each tool call as it happens.",
+  "agent.usingTool": "Using tool",
+  "agent.error": "Couldn't reach the agent",
+  "agent.example1": "Which Go projects have you built, and are you open to contract work?",
+  "agent.example2": "What's your strongest fintech experience?",
+  "agent.example3": "What's your backend stack, and how can I contact you?",
   "fitCheck.title": "Fit Check",
   "fitCheck.subtitle":
     "Paste a job description and the AI scores how well I fit the role — grounded in my CV, with strengths, gaps, and a tailored pitch.",
@@ -817,6 +834,23 @@ const id: Record<keyof typeof en, string> = {
   "playground.demo.fitCheck.title": "Fit Check (Mode Rekruter)",
   "playground.demo.fitCheck.desc":
     "Tempel deskripsi pekerjaan — AI menilai kecocokan saya, lengkap dengan kelebihan, kekurangan, dan pitch yang disesuaikan.",
+  "playground.demo.agent.title": "Tanya Agen AI",
+  "playground.demo.agent.desc":
+    "Agen AI yang memanggil tool untuk menjawab tentang saya — proyek, pengalaman, dan CV. Pemanggilan tool ditampilkan langsung.",
+  "agent.title": "Tanya Agen AI",
+  "agent.subtitle":
+    "Agen AI yang menjawab pertanyaan tentang saya dengan memanggil tool nyata — proyek, pengalaman, keahlian, ketersediaan, dan pencarian CV semantik. Lihat pemanggilan tool secara langsung.",
+  "agent.placeholder": "Tanya tentang proyek, pengalaman, atau ketersediaan saya…",
+  "agent.send": "Kirim",
+  "agent.stop": "Berhenti",
+  "agent.thinking": "Berpikir…",
+  "agent.emptyHint":
+    "Tanyakan apa saja tentang Ginola — agen memilih tool yang tepat untuk menjawab, dan setiap pemanggilan tool akan terlihat langsung.",
+  "agent.usingTool": "Memakai tool",
+  "agent.error": "Tidak dapat menghubungi agen",
+  "agent.example1": "Proyek Go apa yang pernah kamu buat, dan apakah terbuka untuk kerja kontrak?",
+  "agent.example2": "Apa pengalaman fintech terkuatmu?",
+  "agent.example3": "Apa stack backend-mu, dan bagaimana cara menghubungimu?",
   "fitCheck.title": "Fit Check",
   "fitCheck.subtitle":
     "Tempel deskripsi pekerjaan dan AI menilai seberapa cocok saya untuk peran itu — berdasarkan CV saya, lengkap dengan kelebihan, kekurangan, dan pitch yang disesuaikan.",

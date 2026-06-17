@@ -17,6 +17,12 @@ type Demo = {
 
 const demos: Demo[] = [
   {
+    titleKey: "playground.demo.agent.title",
+    descKey: "playground.demo.agent.desc",
+    href: "/playground/agent",
+    status: "live",
+  },
+  {
     titleKey: "playground.demo.fitCheck.title",
     descKey: "playground.demo.fitCheck.desc",
     href: "/playground/fit-check",
