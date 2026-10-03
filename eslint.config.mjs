@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Expo (React Native) app is a self-contained project; the web
+    // lint/typecheck must not try to compile it.
+    "mobile-apps/**",
   ]),
 ]);
 

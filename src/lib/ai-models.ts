@@ -23,42 +23,28 @@ export type ModelOption = {
   contextWindow?: number;
 };
 
+/**
+ * Groq retired the Llama 3.x models for free/developer tiers on 2026-08-16
+ * (https://console.groq.com/docs/deprecations) — only production models that
+ * the free tier can call are listed here.
+ */
+export const DEFAULT_GROQ_MODEL_ID = "openai/gpt-oss-120b";
+
 export const availableChatModels: Record<ChatProvider, ModelOption[]> = {
   groq: [
     {
-      id: "llama-3.3-70b-versatile",
-      label: "Llama 3.3 70B",
-      description: "Balanced general-purpose, default choice",
+      id: DEFAULT_GROQ_MODEL_ID,
+      label: "GPT-OSS 120B",
+      description: "OpenAI open-weight model, balanced default choice",
       badge: "default",
       contextWindow: 131072,
     },
     {
-      id: "llama-3.1-8b-instant",
-      label: "Llama 3.1 8B",
-      description: "Smallest & fastest, great for trivial tasks",
+      id: "openai/gpt-oss-20b",
+      label: "GPT-OSS 20B",
+      description: "Smallest & fastest, great for quick answers",
       badge: "fast",
       contextWindow: 131072,
-    },
-    {
-      id: "qwen-qwq-32b",
-      label: "Qwen QwQ 32B",
-      description: "Reasoning-focused, shows thinking tokens",
-      badge: "reasoning",
-      contextWindow: 131072,
-    },
-    {
-      id: "deepseek-r1-distill-llama-70b",
-      label: "DeepSeek R1 Distill 70B",
-      description: "Best for hard reasoning & math",
-      badge: "reasoning",
-      contextWindow: 131072,
-    },
-    {
-      id: "gemma2-9b-it",
-      label: "Gemma 2 9B",
-      description: "Google open model, fast & accurate",
-      badge: "fast",
-      contextWindow: 8192,
     },
   ],
   openai: [

@@ -1,6 +1,7 @@
 import { streamText, type Message } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { profile } from "@/content/profile";
+import { buildCvSummary } from "@/lib/cv-context";
 import { chatLanguageInstruction } from "@/lib/i18n/locale-prompt";
 import { formatChunksForPrompt, retrieveRelevantChunks } from "@/lib/rag";
 
@@ -78,6 +79,13 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error("RAG retrieval failed:", err);
     }
+  }
+
+  // Without retrieval (e.g. no embedding provider reachable in this
+  // environment) fall back to the static CV so answers stay grounded.
+  if (sources.length === 0) {
+    context = `[1] (profile: ${profile.name}'s CV)\n${buildCvSummary()}`;
+    sources = [{ id: 0, title: `${profile.name}'s CV`, url: "/about" }];
   }
 
   const system = `${buildSystem(locale)}\n\n# Retrieved context\n${context}`;

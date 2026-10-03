@@ -10,7 +10,7 @@ import { TOOL_META, type AgentToolName } from "@/lib/agent-tools-meta";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
-const AGENT_MODEL_LABEL = "Groq · Llama 3.1 8B";
+const AGENT_MODEL_LABEL = "Groq · GPT-OSS 20B";
 
 function formatArgs(args: unknown): string {
   if (!args || typeof args !== "object") return "";

@@ -1,5 +1,9 @@
 import { aiInfo, getDefaultModelRef } from "@/lib/ai";
-import { availableChatModels, UI_CHAT_PROVIDERS } from "@/lib/ai-models";
+import {
+  availableChatModels,
+  DEFAULT_GROQ_MODEL_ID,
+  UI_CHAT_PROVIDERS,
+} from "@/lib/ai-models";
 import { encodeModelRef } from "@/lib/chat-model-ref";
 import { fetchOllamaChatModels } from "@/lib/ollama-models";
 
@@ -34,7 +38,7 @@ export async function GET() {
 
   const groqDefault =
     availableChatModels.groq.find(
-      (m) => m.id === (process.env.GROQ_CHAT_MODEL ?? "llama-3.3-70b-versatile")
+      (m) => m.id === (process.env.GROQ_CHAT_MODEL ?? DEFAULT_GROQ_MODEL_ID)
     )?.id ?? availableChatModels.groq[0]?.id;
 
   const ollamaDefault =
@@ -43,7 +47,7 @@ export async function GET() {
     )?.id ?? ollamaModels[0]?.id;
 
   const defaultModelRef = groqAvailable
-    ? encodeModelRef("groq", groqDefault ?? "llama-3.3-70b-versatile")
+    ? encodeModelRef("groq", groqDefault ?? DEFAULT_GROQ_MODEL_ID)
     : ollamaDefault
       ? encodeModelRef("ollama", ollamaDefault)
       : getDefaultModelRef();

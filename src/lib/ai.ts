@@ -1,6 +1,7 @@
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 import {
+  DEFAULT_GROQ_MODEL_ID,
   isValidModelId,
   type ChatProvider,
   type ModelGroup,
@@ -29,7 +30,7 @@ const EMBEDDING_MODEL =
 
 const CHAT_MODEL =
   CHAT_PROVIDER === "groq"
-    ? (process.env.GROQ_CHAT_MODEL ?? "llama-3.3-70b-versatile")
+    ? (process.env.GROQ_CHAT_MODEL ?? DEFAULT_GROQ_MODEL_ID)
     : CHAT_PROVIDER === "ollama"
       ? (process.env.OLLAMA_CHAT_MODEL ?? "Llama3:latest")
       : (process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini");

@@ -9,11 +9,10 @@ export const maxDuration = 30;
 
 /**
  * Tool-calling needs a model that reliably emits valid function calls. Among the
- * configured providers, Ollama Llama 3 has no tool support and Groq's
- * llama-3.3-70b-versatile / gemma2 currently fail tool-calling, while
- * llama-3.1-8b-instant is fast and reliable — so the agent forces it.
+ * configured providers, Ollama Llama 3 has no tool support, while Groq's
+ * gpt-oss-20b is fast and reliable at tool-calling — so the agent forces it.
  */
-const AGENT_MODEL_REF = "groq:llama-3.1-8b-instant";
+const AGENT_MODEL_REF = "groq:openai/gpt-oss-20b";
 
 function buildAgentSystem(locale?: string): string {
   return `You are an agentic assistant on ${profile.name}'s portfolio. You answer recruiters' and visitors' questions about ${profile.name} by CALLING TOOLS, then summarizing the results.
