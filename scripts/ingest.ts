@@ -11,6 +11,7 @@ import {
   publications,
 } from "@/content/profile";
 import { allProjects } from "@/content/projects";
+import { getLocalizedProject, projectsI18n } from "@/content/projects-i18n";
 import { blogPosts } from "@/content/blog";
 
 function chunkText(text: string, maxLen = 600, overlap = 80): string[] {
@@ -117,7 +118,10 @@ function buildDocs(): DraftDoc[] {
         ? ` Key outcomes: ${project.highlights.join("; ")}.`
         : ""
     }${project.role ? ` Role: ${project.role}.` : ""}`;
-    chunkText(`${header}\n${body}`).forEach((content, i) => {
+    chunkText(`${header}\n${body}`).forEach((chunk, i) => {
+      // Contextual header: later chunks keep the project's identity, so
+      // details like a library name still retrieve the right project.
+      const content = i === 0 ? chunk : `Project: ${project.title} (continued). ${chunk}`;
       docs.push({
         source: "project",
         sourceId: `${project.slug}-${i}`,
@@ -133,6 +137,27 @@ function buildDocs(): DraftDoc[] {
         }),
       });
     });
+
+    // Indonesian version too, so questions asked in Bahasa Indonesia retrieve
+    // projects as well (the embedding model matches poorly across languages).
+    if (projectsI18n[project.slug]) {
+      const id = getLocalizedProject(project, "id");
+      const idText = `Proyek: ${id.title} (${project.year})${
+        project.client ? ` untuk ${project.client}` : ""
+      }. ${id.summary}\n${id.description} Teknologi: ${project.tags.join(", ")}.${
+        id.highlights.length ? ` Hasil utama: ${id.highlights.join("; ")}.` : ""
+      }`;
+      chunkText(idText).forEach((chunk, i) => {
+        docs.push({
+          source: "project",
+          sourceId: `${project.slug}-id-${i}`,
+          title: project.title,
+          url: `/${project.visibility === "private" ? "work" : "projects"}/${project.slug}`,
+          content: i === 0 ? chunk : `Proyek: ${id.title} (lanjutan). ${chunk}`,
+          metadata: JSON.stringify({ slug: project.slug, locale: "id", tags: project.tags }),
+        });
+      });
+    }
   }
 
   for (const post of blogPosts) {

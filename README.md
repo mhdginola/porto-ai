@@ -1,7 +1,9 @@
 # porto-ai
 
 Portfolio Full Stack Developer + AI Engineer dengan **chatbot RAG sungguhan**
-(Postgres + pgvector + OpenAI embeddings).
+(Postgres + pgvector), AI Playground, demo project interaktif (CRUD, Auth & Roles,
+Payment & Subscription dengan Xendit, Website Builder), smart contact form, dan
+kotak masuk admin.
 
 ## Tech stack
 
@@ -10,12 +12,15 @@ Portfolio Full Stack Developer + AI Engineer dengan **chatbot RAG sungguhan**
 - **AI (hybrid, gratis)**:
   - **Embeddings**: Ollama lokal + `nomic-embed-text` (768d) — gratis & offline
   - **Chat**: Ollama lokal (semua model dari `ollama list`) — gratis & offline
-  - **Chat (opsional)**: Groq + `llama-3.3-70b-versatile` — free tier super cepat
+  - **Chat (opsional)**: Groq + `openai/gpt-oss-120b` — free tier super cepat
   - Provider-agnostic: tinggal ganti `EMBEDDING_PROVIDER` / `CHAT_PROVIDER`
 - **Vector DB**: PostgreSQL 17 + pgvector (HNSW + cosine)
 - **ORM**: Drizzle ORM + Drizzle Kit
 - **Animasi**: Framer Motion
 - **Theme**: @teispace/next-themes (dark mode default; React 19 / Next 16 compatible)
+- **Payment**: Xendit Invoice API (test mode) + webhook
+- **Email**: Resend (notifikasi contact form)
+- **Cron**: Vercel Cron (`vercel.json`)
 
 ## Setup awal
 
@@ -96,10 +101,10 @@ embed via Ollama (nomic-embed-text, 768d, lokal)
 cosine similarity search di pgvector (HNSW index)
     │
     ▼
-top-5 chunks → disuntik ke system prompt
+top-8 chunks → disuntik ke system prompt
     │
     ▼
-streamText via Groq (llama-3.3-70b) → response + sumber (x-rag-sources header)
+streamText via Groq (openai/gpt-oss-120b) → response + sumber (x-rag-sources header)
 ```
 
 File-file kunci:
@@ -108,7 +113,8 @@ File-file kunci:
 - `src/lib/db/schema.ts` — tabel `documents` dengan kolom `vector(768)`
 - `src/lib/rag.ts` — `retrieveRelevantChunks()` dengan cosine distance
 - `src/lib/embeddings.ts` — wrapper `embed` / `embedMany`
-- `scripts/ingest.ts` — chunker + batch embed + insert
+- `scripts/ingest.ts` — chunker + batch embed + insert (project di-ingest dalam EN dan ID;
+  setiap chunk diberi header nama project supaya detail di chunk lanjutan tetap ketemu)
 - `src/app/api/chat/route.ts` — RAG-augmented streaming endpoint
 - `src/components/ai/ChatWidget.tsx` — UI + parsing `x-rag-sources` header
 
@@ -145,37 +151,58 @@ npm run db:ingest
 
 ```
 portoAI/
-├── docker-compose.yml          # Postgres 17 + pgvector
-├── drizzle.config.ts           # Drizzle Kit config
-├── drizzle/                    # generated migrations
+├── docker-compose.yml            # Postgres 17 + pgvector
+├── drizzle.config.ts             # Drizzle Kit config
+├── vercel.json                   # cron harian → /api/cron/daily
 ├── scripts/
-│   ├── setup-db.ts             # CREATE EXTENSION vector
-│   └── ingest.ts               # chunk + embed + upsert
+│   ├── setup-db.ts               # CREATE EXTENSION vector
+│   ├── ingest.ts                 # chunk + embed + insert knowledge base (EN + ID)
+│   └── seed-*.ts                 # data awal demo (auth, crud, property agency)
 └── src/
     ├── app/
-    │   ├── api/chat/route.ts   # RAG endpoint (Node runtime)
+    │   ├── api/
+    │   │   ├── chat/             # chatbot RAG
+    │   │   ├── playground/       # Mini RAG, agent, fit-check
+    │   │   ├── projects/         # API demo: crud, auth, payment (+ xendit), property-agency
+    │   │   ├── contact/          # smart contact form
+    │   │   ├── admin/            # login + leads inbox
+    │   │   └── cron/             # daily: maintenance + perpanjangan langganan
+    │   ├── admin/                # /admin/leads (owner-only)
     │   └── (pages...)
-    ├── components/
-    │   ├── ai/ChatWidget.tsx
-    │   └── (layout, sections, ui)
-    ├── content/                # source of truth untuk knowledge base
+    ├── components/               # ai, admin, payment-demo, pages, layout, ui
+    ├── content/                  # source of truth knowledge base (profile, projects, blog)
     ├── lib/
     │   ├── db/{index,schema}.ts
-    │   ├── embeddings.ts
-    │   ├── rag.ts
-    │   ├── site.ts
-    │   └── utils.ts
+    │   ├── rag.ts, embeddings.ts, ai.ts
+    │   ├── rate-limit.ts         # rate limiter berbasis Postgres
+    │   ├── chat-input.ts         # validasi input endpoint chat
+    │   ├── payment-demo/         # billing, Xendit client & service, entitlements
+    │   ├── contact/              # klasifikasi AI, email Resend
+    │   ├── admin/                # sesi admin, query leads
+    │   └── auth-demo/
     └── types/index.ts
 ```
 
 ## Deploy
 
-Push ke GitHub, import di [Vercel](https://vercel.com/new), set env var:
+Push ke GitHub, import di [Vercel](https://vercel.com/new), lalu set env var
+(lihat `.env.example` untuk detail):
 
-- `OPENAI_API_KEY`
-- `DATABASE_URL` (gunakan Neon free tier — pgvector built-in)
+| Variabel | Keterangan |
+| --- | --- |
+| `DATABASE_URL` | Postgres + pgvector (mis. Supabase / Neon) |
+| `NEXT_PUBLIC_SITE_URL` | URL produksi (dipakai untuk redirect Xendit) |
+| `CHAT_PROVIDER`, `GROQ_API_KEY` | chat AI (Groq) |
+| `EMBEDDING_PROVIDER` + key | embeddings untuk RAG: `openai` (+ `OPENAI_API_KEY`) atau `ollama` |
+| `AUTH_DEMO_SECRET` | **wajib**, min. 32 karakter |
+| `CRON_SECRET` | **wajib** untuk cron harian |
+| `XENDIT_SECRET_KEY`, `XENDIT_CALLBACK_TOKEN` | opsional — mode Xendit |
+| `RESEND_API_KEY`, `CONTACT_TO_EMAIL` | opsional — email contact form |
+| `ADMIN_PASSWORD` | opsional — kotak masuk `/admin/leads` |
 
-Lalu jalankan ingest sekali via CI atau lokal yang nunjuk ke DATABASE_URL produksi.
+Database: jalankan `npm run db:push` (atau SQL migrasi yang setara) ke database produksi,
+lalu `npm run db:ingest` dengan `DATABASE_URL` dan provider embedding produksi supaya
+chatbot punya knowledge base. Ulangi ingest setiap kali konten di `src/content/` berubah.
 
 ## Demo Payment & Subscription (Xendit)
 
@@ -282,10 +309,15 @@ produksi); tanpa itu semua `/admin` mengembalikan 404.
 ## Roadmap
 
 - [x] Chatbot RAG sungguhan (pgvector + embeddings + citations)
-- [ ] AI Playground demo (Summarizer, Image-to-Code, Mini RAG upload PDF)
+- [x] AI Playground (Summarizer, Sentiment, Mini RAG upload PDF, Review summarizer, Agent, Fit check)
+- [x] Smart contact form (AI klasifikasi inquiry + email via Resend)
+- [x] Demo Payment & Subscription dengan integrasi Xendit + entitlement di Auth demo
+- [x] Kotak masuk admin untuk lead
+- [x] Rate limiting + validasi input di semua endpoint publik
+- [ ] "Tanya tentang project ini" — chatbot per halaman project
 - [ ] MDX blog dengan auto-ingest ke RAG
-- [ ] Smart contact form (AI klasifikasi inquiry)
-- [ ] Re-ranker (cohere atau cross-encoder lokal)
+- [ ] Re-ranker / hybrid search (keyword + vector) untuk RAG
+- [ ] Test otomatis + CI (typecheck, lint, build)
 
 ## Lisensi
 

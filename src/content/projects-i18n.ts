@@ -261,22 +261,28 @@ Semua metrik dan data di-hardcode — tanpa backend.`,
       id: "Pembayaran & Langganan (Billing)",
     },
     summary: {
-      en: "SaaS billing flow — pricing plans, card checkout with 3-D Secure, proration, invoices, and webhook events.",
-      id: "Alur billing SaaS — paket harga, checkout kartu dengan 3-D Secure, proration, invoice, dan webhook event.",
+      en: "SaaS billing with a Xendit payment-gateway integration — plans, checkout, proration, invoices, webhooks, and plan-gated features.",
+      id: "Billing SaaS dengan integrasi payment gateway Xendit — paket, checkout, proration, invoice, webhook, dan fitur berbasis paket.",
     },
     description: {
-      en: `Interactive subscription-billing demo modelled on how real payment gateways work.
-Pick a plan, pay with a test card (success, decline, insufficient funds, or 3-D Secure
-OTP), then upgrade with prorated credit, schedule a downgrade, cancel at period end, or
-fast-forward the clock to run the renewal job. A mock gateway in Next.js Route Handlers
-computes every amount server-side, validates cards (Luhn, expiry, CVC), honours
-idempotency keys, and emits webhook-style events.`,
-      id: `Demo billing langganan interaktif yang meniru cara kerja payment gateway sungguhan.
-Pilih paket, bayar dengan kartu test (berhasil, ditolak, saldo kurang, atau OTP 3-D
-Secure), lalu upgrade dengan kredit proration, jadwalkan downgrade, batalkan di akhir
-periode, atau majukan jam untuk menjalankan job perpanjangan. Mock gateway di Route
-Handler Next.js menghitung semua nominal di server, memvalidasi kartu (Luhn, masa
-berlaku, CVC), mendukung idempotency key, dan mengirim event bergaya webhook.`,
+      en: `Subscription-billing project with a real payment-gateway integration (Xendit,
+test mode) alongside a built-in simulator. In Xendit mode, checkout creates a Xendit
+invoice and the customer pays on Xendit's hosted page (virtual account, e-wallet, QRIS,
+or card); a verified webhook — plus reconciliation against the Xendit API — activates
+the subscription exactly once. Upgrades are prorated, downgrades scheduled, and a daily
+cron issues renewal invoices and ends unpaid subscriptions after a grace period. Plans
+unlock modules in the Auth & Roles demo (entitlements checked server-side). The
+simulator covers card checkout with 3-D Secure, Luhn/expiry/CVC validation, and
+idempotency keys.`,
+      id: `Project billing langganan dengan integrasi payment gateway sungguhan (Xendit,
+mode test) plus simulator bawaan. Di mode Xendit, checkout membuat invoice Xendit dan
+pelanggan membayar di halaman Xendit (virtual account, e-wallet, QRIS, atau kartu);
+webhook yang diverifikasi — ditambah rekonsiliasi ke API Xendit — mengaktifkan langganan
+tepat satu kali. Upgrade dihitung proration, downgrade dijadwalkan, dan cron harian
+menerbitkan invoice perpanjangan serta mengakhiri langganan yang tidak dibayar setelah
+masa tenggang. Paket membuka modul di demo Auth & Roles (entitlement dicek di server).
+Simulator mencakup checkout kartu dengan 3-D Secure, validasi Luhn/masa berlaku/CVC,
+dan idempotency key.`,
     },
     role: { en: "Creator", id: "Pembuat" },
     highlights: {

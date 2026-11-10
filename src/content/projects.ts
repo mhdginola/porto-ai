@@ -243,14 +243,17 @@ order tables. All metrics and records are hardcoded — no backend required.`,
     slug: "payment-subscription-demo",
     title: "Payment & Subscription Billing",
     summary:
-      "SaaS billing flow — pricing plans, card checkout with 3-D Secure, proration, invoices, and webhook events.",
-    description: `Interactive subscription-billing demo modelled on how real payment gateways work.
-Pick a plan, pay with a test card (success, decline, insufficient funds, or 3-D Secure
-OTP), then upgrade with prorated credit, schedule a downgrade, cancel at period end, or
-fast-forward the clock to run the renewal job. A mock gateway in Next.js Route Handlers
-computes every amount server-side, validates cards (Luhn, expiry, CVC), honours
-idempotency keys, and emits webhook-style events.`,
-    tags: ["Next.js", "TypeScript", "Payments", "Subscriptions", "Zod", "REST API"],
+      "SaaS billing with a Xendit payment-gateway integration — plans, checkout, proration, invoices, webhooks, and plan-gated features.",
+    description: `Subscription-billing project with a real payment-gateway integration (Xendit,
+test mode) alongside a built-in simulator. In Xendit mode, checkout creates a Xendit
+invoice and the customer pays on Xendit's hosted page (virtual account, e-wallet, QRIS,
+or card); a verified webhook — plus reconciliation against the Xendit API — activates
+the subscription exactly once. Upgrades are prorated, downgrades scheduled, and a daily
+cron issues renewal invoices and ends unpaid subscriptions after a grace period. Plans
+unlock modules in the Auth & Roles demo (entitlements checked server-side). The
+simulator covers card checkout with 3-D Secure, Luhn/expiry/CVC validation, and
+idempotency keys.`,
+    tags: ["Next.js", "TypeScript", "Xendit", "Payment Gateway", "Webhooks", "PostgreSQL", "Subscriptions"],
     visibility: "public",
     category: "saas",
     role: "Creator",
