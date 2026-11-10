@@ -195,3 +195,41 @@ export const paymentEvents = pgTable(
     index("payment_events_customer_idx").on(table.customerId, table.createdAt),
   ]
 );
+
+/* ---------- Smart contact form ---------- */
+
+export const contactMessages = pgTable(
+  "contact_messages",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    company: text("company"),
+    message: text("message").notNull(),
+    locale: text("locale").notNull().default("en"),
+    /** job_offer | freelance | collaboration | question | spam | other — null if AI failed */
+    category: text("category"),
+    /** AI confidence 0–100 */
+    confidence: integer("confidence"),
+    /** high | normal | low */
+    priority: text("priority"),
+    summary: text("summary"),
+    suggestedReply: text("suggested_reply"),
+    aiModel: text("ai_model"),
+    aiError: text("ai_error"),
+    /** new | spam | read | archived */
+    status: text("status").notNull().default("new"),
+    /** Salted SHA-256 of the client IP — for rate limiting, never the raw IP. */
+    ipHash: text("ip_hash").notNull(),
+    userAgent: text("user_agent"),
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+    autoRepliedAt: timestamp("auto_replied_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("contact_messages_ip_idx").on(table.ipHash, table.createdAt),
+    index("contact_messages_email_idx").on(table.email, table.createdAt),
+  ]
+);
+
+export type ContactMessageRow = typeof contactMessages.$inferSelect;

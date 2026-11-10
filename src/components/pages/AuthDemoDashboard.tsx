@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Activity,
+  ArrowUpRight,
+  CreditCard,
   BarChart3,
   CheckCircle2,
   Crown,
@@ -21,17 +23,19 @@ import {
   Eye,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useLocale } from "@/components/layout/LocaleProvider";
+import { formatDay } from "@/components/payment-demo/shared";
 import { Button } from "@/components/ui/Button";
 import type { AuthDemoRole, AuthDemoSession } from "@/lib/auth-demo/constants";
+import type { ModulesResponse } from "@/lib/auth-demo/module-access";
 import {
   AUTH_DEMO_MODULE_IDS,
   MANAGEABLE_ROLES,
   type AuthDemoModuleId,
   type ManageableRole,
   type PermissionMatrix,
-  countAllowedModules,
-  hasModuleAccess,
 } from "@/lib/auth-demo/permissions";
+import { getPlan } from "@/lib/payment-demo/billing";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
@@ -70,35 +74,30 @@ const MODULE_META: {
   icon: typeof BarChart3;
   titleKey: TranslationKey;
   descKey: TranslationKey;
-  stat: string;
 }[] = [
   {
     id: "analytics",
     icon: BarChart3,
     titleKey: "authDemo.panel.analytics",
     descKey: "authDemo.panel.analyticsDesc",
-    stat: "12.4k",
   },
   {
     id: "content",
     icon: FileText,
     titleKey: "authDemo.panel.content",
     descKey: "authDemo.panel.contentDesc",
-    stat: "86",
   },
   {
     id: "users",
     icon: Users,
     titleKey: "authDemo.panel.users",
     descKey: "authDemo.panel.usersDesc",
-    stat: "24",
   },
   {
     id: "settings",
     icon: Settings,
     titleKey: "authDemo.panel.settings",
     descKey: "authDemo.panel.settingsDesc",
-    stat: "—",
   },
 ];
 
@@ -117,6 +116,8 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+const BILLING_HREF = "/projects/payment-subscription-demo?mode=xendit";
+
 type Props = {
   user: AuthDemoSession;
   onLogout: () => void;
@@ -124,6 +125,10 @@ type Props = {
 };
 
 export function AuthDemoDashboard({ user, onLogout, t }: Props) {
+  const { locale } = useLocale();
+  const loc = locale === "id" ? "id" : "en";
+  const [access, setAccess] = useState<ModulesResponse | null>(null);
+  const [accessError, setAccessError] = useState(false);
   const [matrix, setMatrix] = useState<PermissionMatrix | null>(null);
   const [draft, setDraft] = useState<PermissionMatrix | null>(null);
   const [canEdit, setCanEdit] = useState(false);
@@ -149,16 +154,38 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
     }
   }, [t]);
 
+  /** Effective access (role AND plan), evaluated server-side. */
+  const loadAccess = useCallback(async () => {
+    try {
+      const res = await fetch("/api/projects/auth/modules", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load module access");
+      setAccess((await res.json()) as ModulesResponse);
+      setAccessError(false);
+    } catch {
+      setAccessError(true);
+    }
+  }, []);
+
   useEffect(() => {
     loadPermissions();
   }, [loadPermissions]);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState runs after the fetch resolves
+    void loadAccess();
+    // Refresh when returning from the billing page in another tab.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void loadAccess();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadAccess]);
+
   const style = ROLE_STYLES[user.role];
   const RoleIcon = style.icon;
-  const activeMatrix = matrix ?? draft;
-  const allowedCount = activeMatrix
-    ? countAllowedModules(activeMatrix, user.role)
-    : 0;
+  const allowedCount = access?.modules.filter((m) => m.allowed).length ?? 0;
+  const plan = access?.plan;
+  const planName = getPlan(plan?.planId ?? "free").name;
 
   async function handleSavePermissions() {
     if (!draft || !canEdit) return;
@@ -176,6 +203,7 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
       setMatrix(data.matrix);
       setDraft(data.matrix);
       setSaveSuccess(true);
+      void loadAccess();
     } catch (e) {
       setPermError(
         e instanceof Error ? e.message : t("authDemo.permissionsSaveError")
@@ -214,10 +242,10 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
       icon: RoleIcon,
     },
     {
-      labelKey: "authDemo.stat.sessions" as const,
-      value: "1",
-      trend: t("authDemo.stat.sessionsTrend"),
-      icon: Activity,
+      labelKey: "authDemo.plan.title" as const,
+      value: planName,
+      trend: t("authDemo.plan.statTrend"),
+      icon: CreditCard,
     },
     {
       labelKey: "authDemo.stat.uptime" as const,
@@ -336,18 +364,20 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {MODULE_META.map((panel) => {
-              const allowed =
-                displayMatrix &&
-                hasModuleAccess(displayMatrix, user.role, panel.id);
+              const m = access?.modules.find((x) => x.id === panel.id);
+              const allowed = !!m?.allowed;
               const Icon = panel.icon;
               return (
                 <div
                   key={panel.id}
                   className={cn(
                     "group relative overflow-hidden rounded-xl border p-4 transition-all duration-300",
+                    !access && "animate-pulse",
                     allowed
                       ? "border-primary/25 bg-primary-soft/20 hover:border-primary/40 hover:shadow-md hover:shadow-primary/10"
-                      : "border-foreground/5 bg-foreground/[0.02] opacity-55"
+                      : m?.reason === "plan"
+                        ? "border-amber-500/25 bg-amber-500/[0.04]"
+                        : "border-foreground/5 bg-foreground/[0.02] opacity-55"
                   )}
                 >
                   {allowed && (
@@ -369,6 +399,8 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
                     </div>
                     {allowed ? (
                       <CheckCircle2 className="h-4 w-4 text-primary-text" />
+                    ) : m?.reason === "plan" ? (
+                      <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                     ) : (
                       <Lock className="h-4 w-4 text-foreground/35" />
                     )}
@@ -377,30 +409,103 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
                   <p className="mt-1 text-xs leading-relaxed text-foreground/55">
                     {t(panel.descKey)}
                   </p>
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 flex items-center justify-between gap-2">
                     <span
                       className={cn(
                         "text-[10px] font-semibold uppercase tracking-wide",
-                        allowed ? "text-primary-text" : "text-foreground/40"
+                        allowed
+                          ? "text-primary-text"
+                          : m?.reason === "plan"
+                            ? "text-amber-700 dark:text-amber-400"
+                            : "text-foreground/40"
                       )}
                     >
-                      {allowed
-                        ? t("authDemo.accessGranted")
-                        : t("authDemo.accessDeniedRole")}
+                      {!m
+                        ? "…"
+                        : allowed
+                          ? t("authDemo.accessGranted")
+                          : m.reason === "plan"
+                            ? t("authDemo.accessDeniedPlan").replace(
+                                "{plan}",
+                                getPlan(m.requiredPlan).name
+                              )
+                            : t("authDemo.accessDeniedRole")}
                     </span>
-                    {allowed && panel.stat !== "—" && (
+                    {allowed && m?.data && m.data.stat !== "—" && (
                       <span className="text-xs font-mono text-foreground/45">
-                        {panel.stat}
+                        {m.data.stat}
                       </span>
+                    )}
+                    {m?.reason === "plan" && access?.billingEnabled && (
+                      <Link
+                        href={BILLING_HREF}
+                        className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary-text hover:underline"
+                      >
+                        {t("authDemo.plan.upgradeShort")}
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Link>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+          {accessError && (
+            <p className="text-xs text-red-500">{t("authDemo.plan.loadError")}</p>
+          )}
         </motion.div>
 
         <motion.div variants={item} className="space-y-4">
+          <div className="rounded-xl border border-foreground/10 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold">{t("authDemo.plan.title")}</h3>
+                <p className="mt-1 text-2xl font-semibold tracking-tight">{planName}</p>
+              </div>
+              <CreditCard className="h-5 w-5 text-foreground/35" />
+            </div>
+            <p
+              className={cn(
+                "mt-1 text-xs",
+                plan?.pastDue ? "text-amber-700 dark:text-amber-400" : "text-foreground/55"
+              )}
+            >
+              {!plan
+                ? "…"
+                : plan.pastDue && plan.graceEndsAt
+                  ? t("authDemo.plan.pastDue").replace("{date}", formatDay(plan.graceEndsAt, loc))
+                  : plan.currentPeriodEnd
+                    ? t(plan.cancelAtPeriodEnd ? "authDemo.plan.ends" : "authDemo.plan.renews").replace(
+                        "{date}",
+                        formatDay(plan.currentPeriodEnd, loc)
+                      )
+                    : t("authDemo.plan.freeHint")}
+            </p>
+            {access?.billingEnabled ? (
+              <Link
+                href={BILLING_HREF}
+                className={cn(
+                  "mt-3 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
+                  plan?.planId === "business"
+                    ? "border border-foreground/15 hover:bg-foreground/5"
+                    : "bg-primary text-primary-foreground hover:opacity-90"
+                )}
+              >
+                {plan?.planId === "business"
+                  ? t("authDemo.plan.manage")
+                  : t("authDemo.plan.upgrade")}
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : access ? (
+              <p className="mt-3 text-[11px] text-foreground/45">
+                {t("authDemo.plan.billingDisabled")}
+              </p>
+            ) : null}
+            <p className="mt-3 border-t border-foreground/10 pt-3 text-[11px] leading-relaxed text-foreground/45">
+              {t("authDemo.plan.gateHint")}
+            </p>
+          </div>
+
           <div className="rounded-xl border border-foreground/10 p-4">
             <div className="flex items-start justify-between gap-2">
               <div>

@@ -615,6 +615,22 @@ export function PaymentSubscriptionDemoView({
           </p>
         </div>
 
+        {isX && xs && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3.5 py-2.5 text-sm text-foreground/70">
+            <span>
+              {xs.account
+                ? t("payment.account.linked").replace("{name}", xs.account.name)
+                : t("payment.account.anon")}
+            </span>
+            <Link
+              href="/projects/auth-demo"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary-text hover:underline"
+            >
+              {xs.account ? t("payment.account.openDashboard") : t("payment.account.signIn")}
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
         {isX && returnBanner && (
           <Banner tone={returnBanner.tone} onClose={() => setReturnStatus(null)}>
             {returnBanner.text}

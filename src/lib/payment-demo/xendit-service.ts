@@ -7,7 +7,7 @@
  * subscription exactly once.
  */
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   paymentEvents,
@@ -30,6 +30,13 @@ import {
   type WebhookEventType,
   type XenditDemoState,
 } from "@/lib/payment-demo/billing";
+import {
+  daysFromNow,
+  entitlementFor,
+  GRACE_DAYS,
+  RENEWAL_LEAD_DAYS,
+  type Entitlement,
+} from "@/lib/payment-demo/entitlements";
 import { invoiceNumber, newId } from "@/lib/payment-demo/server";
 import {
   createXenditInvoice,
@@ -38,7 +45,7 @@ import {
   type XenditInvoice,
 } from "@/lib/payment-demo/xendit";
 
-const INVOICE_DURATION_SECONDS = 60 * 60; // 1 hour payment window
+const CHECKOUT_INVOICE_SECONDS = 60 * 60; // 1 hour to finish a checkout
 const DEMO_PATH = "/projects/payment-subscription-demo";
 
 export class PaymentDemoError extends Error {
@@ -126,11 +133,19 @@ function snapshot(row: PaymentSubscriptionRow | null) {
     : null;
 }
 
-/** Subscriptions set to cancel end once their period is over (evaluated lazily). */
-async function endLapsedSubscription(customerId: string) {
-  const sub = await activeSubscription(db, customerId);
-  if (!sub || !sub.cancelAtPeriodEnd || sub.currentPeriodEnd > new Date()) return;
-  await db.transaction(async (tx) => {
+/**
+ * End a subscription whose paid time is over: cancelled at period end, or the
+ * renewal went unpaid past the grace period. Evaluated lazily on read and by the
+ * renewal job. Returns true if it ended now.
+ */
+async function endIfLapsed(sub: PaymentSubscriptionRow, now = new Date()): Promise<boolean> {
+  if (sub.status !== "active") return false;
+  if (entitlementFor({ ...sub, planId: sub.planId as PlanId }, now).planId !== "free") {
+    return false;
+  }
+  const customerId = sub.customerId;
+  const reason = sub.cancelAtPeriodEnd ? "cancelled" : "unpaid";
+  return db.transaction(async (tx) => {
     const [ended] = await tx
       .update(paymentSubscriptions)
       .set({ status: "ended", updatedAt: new Date() })
@@ -142,10 +157,17 @@ async function endLapsedSubscription(customerId: string) {
       await logEvent(tx, customerId, "customer.subscription.deleted", {
         subscription: sub.id,
         plan: sub.planId,
+        reason,
         ended_at: sub.currentPeriodEnd.toISOString(),
       });
     }
+    return !!ended;
   });
+}
+
+async function endLapsedSubscription(customerId: string) {
+  const sub = await activeSubscription(db, customerId);
+  if (sub) await endIfLapsed(sub);
 }
 
 /** Only one open payment link per visitor: supersede older ones. */
@@ -176,6 +198,8 @@ async function openInvoice(params: {
   quote: Quote;
   reason: Invoice["reason"];
   lines: Invoice["lines"];
+  /** Payment window in seconds (defaults to 1 hour for interactive checkout). */
+  durationSeconds?: number;
 }): Promise<{ invoiceUrl: string | null }> {
   const { customerId, origin, quote, reason, lines } = params;
   await expirePendingInvoices(customerId);
@@ -214,7 +238,7 @@ async function openInvoice(params: {
       externalId,
       amount: quote.total,
       description: `Porto AI demo — ${plan.name} plan (${quote.cycle}) · ${row.number}`,
-      invoiceDuration: INVOICE_DURATION_SECONDS,
+      invoiceDuration: params.durationSeconds ?? CHECKOUT_INVOICE_SECONDS,
       successRedirectUrl: `${back}success`,
       failureRedirectUrl: `${back}failed`,
     });
@@ -330,7 +354,10 @@ async function applyPaid(
 
 /* ---------------- public API ---------------- */
 
-export async function getXenditDemoState(customerId: string): Promise<XenditDemoState> {
+export async function getXenditDemoState(
+  customerId: string,
+  account: XenditDemoState["account"] = null
+): Promise<XenditDemoState> {
   await endLapsedSubscription(customerId);
   const [sub, invoices, events] = await Promise.all([
     activeSubscription(db, customerId),
@@ -349,6 +376,7 @@ export async function getXenditDemoState(customerId: string): Promise<XenditDemo
   ]);
 
   return {
+    account,
     subscription: sub ? toSubscription(sub) : null,
     scheduledChange:
       sub?.scheduledPlanId && sub.scheduledCycle
@@ -401,25 +429,30 @@ export async function startCheckout(
   });
 }
 
-/**
- * Invoice-based renewal: issue the next period's invoice for the visitor to pay
- * (in production a scheduled job does this a few days before period end).
- */
-export async function startRenewal(customerId: string, origin: string) {
-  const sub = await activeSubscription(db, customerId);
-  if (!sub || sub.cancelAtPeriodEnd) throw new PaymentDemoError("invalid_change");
-
+function issueRenewal(sub: PaymentSubscriptionRow, origin: string) {
   const planId = (sub.scheduledPlanId ?? sub.planId) as PlanId;
   const cycle = (sub.scheduledCycle ?? sub.cycle) as BillingCycle;
   const quote = quoteRenewal(planId, cycle, sub.currentPeriodEnd);
 
+  // Payable until the grace period runs out (at least one hour).
+  const graceEnd = sub.currentPeriodEnd.getTime() + GRACE_DAYS * 86_400_000;
+  const durationSeconds = Math.max(3600, Math.floor((graceEnd - Date.now()) / 1000));
+
   return openInvoice({
-    customerId,
+    customerId: sub.customerId,
     origin,
     quote,
+    durationSeconds,
     reason: "subscription_cycle",
     lines: [{ description: `${getPlan(planId).name} plan (${cycle})`, amount: quote.price }],
   });
+}
+
+/** Manual trigger from the demo UI: issue the next period's invoice now. */
+export async function startRenewal(customerId: string, origin: string) {
+  const sub = await activeSubscription(db, customerId);
+  if (!sub || sub.cancelAtPeriodEnd) throw new PaymentDemoError("invalid_change");
+  return issueRenewal(sub, origin);
 }
 
 export type SubscriptionAction =
@@ -567,4 +600,82 @@ export async function reconcilePending(customerId: string) {
         }
       })
   );
+}
+
+/** Effective plan for a customer — what feature gates should check. */
+export async function getEntitlement(customerId: string): Promise<Entitlement> {
+  const sub = await activeSubscription(db, customerId);
+  return entitlementFor(sub && { ...sub, planId: sub.planId as PlanId });
+}
+
+export type RenewalJobResult = {
+  scanned: number;
+  ended: number;
+  invoiced: number;
+  skipped: number;
+  failed: number;
+};
+
+const RENEWAL_BATCH = 50;
+
+/**
+ * Daily billing job (Vercel Cron → /api/cron/payment-renewals):
+ * - ends subscriptions that were cancelled or stayed unpaid past the grace period;
+ * - issues the next period's Xendit invoice RENEWAL_LEAD_DAYS before period end.
+ * Idempotent: a subscription with an open invoice is skipped, so re-runs are safe.
+ */
+export async function runRenewalJob(origin: string): Promise<RenewalJobResult> {
+  const now = new Date();
+  const due = await db
+    .select()
+    .from(paymentSubscriptions)
+    .where(
+      and(
+        eq(paymentSubscriptions.status, "active"),
+        lte(paymentSubscriptions.currentPeriodEnd, daysFromNow(RENEWAL_LEAD_DAYS, now))
+      )
+    )
+    .orderBy(paymentSubscriptions.currentPeriodEnd)
+    .limit(RENEWAL_BATCH);
+
+  const result: RenewalJobResult = {
+    scanned: due.length,
+    ended: 0,
+    invoiced: 0,
+    skipped: 0,
+    failed: 0,
+  };
+
+  for (const sub of due) {
+    try {
+      if (await endIfLapsed(sub, now)) {
+        result.ended++;
+        continue;
+      }
+      if (sub.cancelAtPeriodEnd) {
+        result.skipped++;
+        continue;
+      }
+      const [open] = await db
+        .select({ id: paymentInvoices.id })
+        .from(paymentInvoices)
+        .where(
+          and(
+            eq(paymentInvoices.customerId, sub.customerId),
+            eq(paymentInvoices.status, "PENDING")
+          )
+        )
+        .limit(1);
+      if (open) {
+        result.skipped++;
+        continue;
+      }
+      await issueRenewal(sub, origin);
+      result.invoiced++;
+    } catch (err) {
+      result.failed++;
+      console.error(`[payment-demo] renewal job failed for ${sub.id}:`, err);
+    }
+  }
+  return result;
 }

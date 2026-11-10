@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getCustomerId } from "@/lib/payment-demo/customer";
+import { getBillingCustomer } from "@/lib/payment-demo/customer";
 import { errorResponse, xenditDisabledResponse } from "@/lib/payment-demo/route-helpers";
 import { getXenditDemoState, updateSubscription } from "@/lib/payment-demo/xendit-service";
 
@@ -24,9 +24,9 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ code: "invalid_request" }, { status: 400 });
 
   try {
-    const customerId = await getCustomerId();
-    await updateSubscription(customerId, parsed.data);
-    return Response.json(await getXenditDemoState(customerId));
+    const customer = await getBillingCustomer();
+    await updateSubscription(customer.id, parsed.data);
+    return Response.json(await getXenditDemoState(customer.id, customer.account));
   } catch (err) {
     return errorResponse(err, "subscription");
   }

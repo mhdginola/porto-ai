@@ -204,8 +204,37 @@ Catatan:
   karena halaman demo mengecek status invoice ke Xendit (`GET /v2/invoices/:id`)
   sewaktu user kembali dari halaman pembayaran, plus polling selama ada invoice pending.
   Untuk menguji webhook asli secara lokal, pakai tunnel (mis. `ngrok http 3000`).
-- Perpanjangan memakai model invoice: tombol "Buat invoice perpanjangan" menerbitkan
-  invoice periode berikutnya (di produksi dijalankan cron sebelum periode berakhir).
+- Perpanjangan memakai model invoice. Cron harian (`vercel.json` →
+  `/api/cron/payment-renewals`, 08:00 WIB) menerbitkan invoice periode berikutnya
+  3 hari sebelum periode berakhir, dan mengakhiri langganan yang dibatalkan atau tidak
+  dibayar setelah masa tenggang 3 hari. Set `CRON_SECRET` di Vercel (Vercel otomatis
+  mengirimnya sebagai `Authorization: Bearer …`). Tes manual:
+  `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/payment-renewals`.
+  Tombol "Buat invoice perpanjangan" di demo tetap ada sebagai pemicu manual.
+
+### Integrasi dengan Auth demo (entitlements)
+
+Saat login di `/projects/auth-demo`, langganan Xendit terikat ke akun (`usr_<id>`), bukan
+ke browser. Modul dashboard butuh **role** yang sesuai (RBAC) **dan** **paket** yang sesuai:
+*User management* butuh Pro, *Settings* butuh Business (`src/lib/payment-demo/entitlements.ts`).
+Akses dihitung di server (`GET /api/projects/auth/modules`) dan data modul yang terkunci
+tidak dikirim. Catatan: akun demo bersama (mis. `admin@demo.local`) berbagi satu langganan.
+
+## Smart contact form
+
+`/contact` punya form yang disortir AI (`POST /api/contact`):
+
+1. Validasi + perlindungan bot (honeypot, waktu isi form < 3 detik) + rate limit
+   (3 pesan / 10 menit dan 10 / hari per IP, 5 / hari per email; IP disimpan sebagai hash).
+2. Pesan **disimpan dulu** ke tabel `contact_messages`, jadi lead tidak hilang walau AI/email gagal.
+3. AI mengklasifikasikan: `job_offer`, `freelance`, `collaboration`, `question`, `spam`, `other`
+   + prioritas, ringkasan, dan draf balasan. Spam (confidence ≥ 70%) tidak dikirim ke email.
+4. Setelah response terkirim (`after()`), notifikasi dikirim via [Resend](https://resend.com)
+   ke `CONTACT_TO_EMAIL` dengan reply-to ke pengirim. Auto-reply ke pengirim opsional
+   (`CONTACT_AUTOREPLY=true`) dan butuh domain terverifikasi di Resend; isinya template tetap
+   (tidak mengulang isi pesan) supaya form tidak bisa disalahgunakan untuk spam.
+
+Tanpa `RESEND_API_KEY`, pesan tetap tersimpan dan diklasifikasi — hanya email yang dilewati.
 
 ## Scripts
 

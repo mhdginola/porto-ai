@@ -312,6 +312,8 @@ export type RenewResponse =
 
 /** Xendit mode: server-side state for the current visitor. */
 export type XenditDemoState = {
+  /** Auth-demo account the subscription belongs to; null = anonymous browser. */
+  account: { name: string; email: string } | null;
   subscription: Subscription | null;
   scheduledChange: { planId: PlanId; cycle: BillingCycle } | null;
   paymentChannel: string | null;

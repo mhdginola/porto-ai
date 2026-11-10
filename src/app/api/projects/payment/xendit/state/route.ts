@@ -1,4 +1,4 @@
-import { getCustomerId } from "@/lib/payment-demo/customer";
+import { getBillingCustomer } from "@/lib/payment-demo/customer";
 import { errorResponse, xenditDisabledResponse } from "@/lib/payment-demo/route-helpers";
 import { getXenditDemoState, reconcilePending } from "@/lib/payment-demo/xendit-service";
 
@@ -10,11 +10,11 @@ export async function GET(req: Request) {
   const disabled = xenditDisabledResponse();
   if (disabled) return disabled;
   try {
-    const customerId = await getCustomerId();
+    const customer = await getBillingCustomer();
     if (new URL(req.url).searchParams.get("reconcile") === "1") {
-      await reconcilePending(customerId);
+      await reconcilePending(customer.id);
     }
-    return Response.json(await getXenditDemoState(customerId));
+    return Response.json(await getXenditDemoState(customer.id, customer.account));
   } catch (err) {
     return errorResponse(err, "state");
   }
