@@ -1,9 +1,11 @@
-import { streamText, type Message } from "ai";
+import { streamText } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { profile } from "@/content/profile";
 import { buildCvSummary } from "@/lib/cv-context";
 import { chatLanguageInstruction } from "@/lib/i18n/locale-prompt";
 import { formatChunksForPrompt, retrieveRelevantChunks } from "@/lib/rag";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
+import { MAX_OUTPUT_TOKENS, parseChatBody } from "@/lib/chat-input";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -53,12 +55,11 @@ Avoid:
 }
 
 export async function POST(req: Request) {
-  const {
-    messages,
-    model,
-    locale,
-  }: { messages: Message[]; model?: string; locale?: string } =
-    await req.json();
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
+  const input = await parseChatBody(req);
+  if (!input.ok) return input.response;
+  const { messages, model, locale } = input.body;
 
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const query =
@@ -95,6 +96,7 @@ export async function POST(req: Request) {
     system,
     messages,
     temperature: 0.45,
+    maxTokens: MAX_OUTPUT_TOKENS,
   });
 
   return result.toDataStreamResponse({

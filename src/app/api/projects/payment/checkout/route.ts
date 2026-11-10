@@ -25,6 +25,7 @@ import {
   replay,
   respond,
 } from "@/lib/payment-demo/server";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,8 @@ export const runtime = "nodejs";
  * sends which plan it wants, never a price.
  */
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.paymentSim);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getBillingCustomer } from "@/lib/payment-demo/customer";
 import { errorResponse, xenditDisabledResponse } from "@/lib/payment-demo/route-helpers";
 import { getXenditDemoState, updateSubscription } from "@/lib/payment-demo/xendit-service";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,8 @@ const schema = z.discriminatedUnion("action", [
 
 /** Cancel / resume / schedule a downgrade — no money moves, so no Xendit call. */
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.xenditAction);
+  if (limited) return limited;
   const disabled = xenditDisabledResponse();
   if (disabled) return disabled;
   const parsed = schema.safeParse(await req.json().catch(() => null));

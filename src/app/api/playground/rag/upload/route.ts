@@ -7,18 +7,22 @@ import { embedBatch, formatEmbeddingError } from "@/lib/embeddings";
 import { chunkText } from "@/lib/chunker";
 import {
   extractPdfText,
+  PdfTooManyPagesError,
   isPdfOcrEnabled,
   pdfNoTextError,
 } from "@/lib/pdf-extract";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
-const MAX_PAGES = 500;
-const MAX_CHUNKS = 2000;
+const MAX_FILE_SIZE = 15 * 1024 * 1024;
+const MAX_PAGES = 150;
+const MAX_CHUNKS = 600;
 
 export async function POST(req: Request) {
+  const throttled = await rateLimit(req, POLICIES.pdfUpload);
+  if (throttled) return throttled;
   let formData: FormData;
   try {
     formData = await req.formData();
@@ -56,18 +60,18 @@ export async function POST(req: Request) {
 
   try {
     const buffer = new Uint8Array(await file.arrayBuffer());
-    const result = await extractPdfText(buffer);
+    // Rejects oversized PDFs before any (expensive) text extraction / OCR.
+    const result = await extractPdfText(buffer, { maxPages: MAX_PAGES });
     text = result.text;
     pageCount = result.pageCount;
     extractionMethod = result.method;
-
-    if (pageCount > MAX_PAGES) {
+  } catch (err) {
+    if (err instanceof PdfTooManyPagesError) {
       return Response.json(
         { error: `PDF has too many pages (max ${MAX_PAGES})` },
         { status: 413 },
       );
     }
-  } catch (err) {
     console.error("[mini-rag/upload] PDF parse failed:", err);
     return Response.json(
       { error: "Failed to read PDF (corrupt or unsupported?)" },

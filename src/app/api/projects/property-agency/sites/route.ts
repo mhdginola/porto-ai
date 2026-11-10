@@ -6,6 +6,7 @@ import {
   createSiteSchema,
   serializeSiteConfig,
 } from "@/lib/property-agency/schemas";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = createSiteSchema.safeParse(body);
   if (!parsed.success) {

@@ -2,6 +2,7 @@ import { streamObject } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { sentimentLanguageInstruction } from "@/lib/i18n/sentiment-prompt";
 import { sentimentSchema } from "@/lib/sentiment-schema";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,6 +34,8 @@ Be nuanced: sarcasm, mixed feelings, and implicit intent matter. Base everything
 Output: return ONLY raw JSON matching the schema. Do NOT wrap in markdown code fences or backticks.`;
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
   let body: { prompt?: string; model?: string; locale?: string };
   try {
     body = await req.json();

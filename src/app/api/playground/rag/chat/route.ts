@@ -2,7 +2,6 @@ import {
   createDataStreamResponse,
   formatDataStreamPart,
   streamText,
-  type Message,
 } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import {
@@ -18,6 +17,8 @@ import {
   miniRagOffTopicMessage,
   shouldRefuseOffTopic,
 } from "@/lib/mini-rag-guard";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
+import { MAX_OUTPUT_TOKENS, parseChatBody } from "@/lib/chat-input";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -58,13 +59,11 @@ function refusalResponse(
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as {
-    messages: Message[];
-    sessionId?: string;
-    model?: string;
-    locale?: string;
-  };
-  const { messages, sessionId, model, locale } = body;
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
+  const input = await parseChatBody(req);
+  if (!input.ok) return input.response;
+  const { messages, sessionId, model, locale } = input.body;
 
   if (!sessionId) {
     return Response.json({ error: "Missing sessionId" }, { status: 400 });
@@ -114,6 +113,7 @@ export async function POST(req: Request) {
     system: `${buildSystem(locale, query)}\n\n# Retrieved context from the PDF\n${context}`,
     messages: ragMessages,
     temperature: 0,
+    maxTokens: MAX_OUTPUT_TOKENS,
   });
 
   return result.toDataStreamResponse({

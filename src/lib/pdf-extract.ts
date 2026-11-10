@@ -58,13 +58,23 @@ export function isPdfOcrEnabled(): boolean {
   return process.env.PDF_OCR_FALLBACK !== "false";
 }
 
+export class PdfTooManyPagesError extends Error {
+  constructor(readonly pageCount: number) {
+    super(`PDF has ${pageCount} pages`);
+  }
+}
+
 export async function extractPdfText(
-  buffer: Uint8Array
+  buffer: Uint8Array,
+  options: { maxPages?: number } = {}
 ): Promise<PdfExtractResult> {
   const pdf = await getDocumentProxy(buffer, {
     verbosity: PDFJS_VERBOSITY_ERRORS_ONLY,
   });
   const pageCount = pdf.numPages;
+  if (options.maxPages && pageCount > options.maxPages) {
+    throw new PdfTooManyPagesError(pageCount);
+  }
 
   const text = await extractTextFromPdf(pdf);
   if (text) {

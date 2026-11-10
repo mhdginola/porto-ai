@@ -2,6 +2,7 @@ import { streamObject } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { reviewSummaryLanguageInstruction } from "@/lib/i18n/review-prompt";
 import { reviewSummarySchema } from "@/lib/review-summary-schema";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -36,6 +37,8 @@ Rules:
 Output: return ONLY raw JSON matching the schema. Do NOT wrap in markdown code fences.`;
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
   let body: { prompt?: string; model?: string; locale?: string };
   try {
     body = await req.json();

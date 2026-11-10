@@ -4,6 +4,7 @@ import { buildCvSummary } from "@/lib/cv-context";
 import { fitCheckLanguageInstruction } from "@/lib/i18n/fit-check-prompt";
 import { fitCheckSchema } from "@/lib/fit-check-schema";
 import { formatChunksForPrompt, retrieveRelevantChunks } from "@/lib/rag";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -27,6 +28,8 @@ CRITICAL OUTPUT RULES:
 - Do NOT wrap the JSON in markdown code fences or backticks. Output raw JSON only.`;
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
   let body: { jobDescription?: string; model?: string; locale?: string };
   try {
     body = await req.json();

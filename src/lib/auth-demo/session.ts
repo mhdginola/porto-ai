@@ -7,10 +7,24 @@ import {
 
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
 
+const DEV_FALLBACK_SECRET = "porto-auth-demo-dev-only-change-me";
+const MIN_SECRET_LENGTH = 32;
+
+/**
+ * JWT signing key. In production a real secret is mandatory: with a public
+ * fallback anyone could forge a superadmin session cookie.
+ */
 function getSecret() {
-  const secret =
-    process.env.AUTH_DEMO_SECRET ?? "porto-auth-demo-dev-only-change-me";
-  return new TextEncoder().encode(secret);
+  const secret = process.env.AUTH_DEMO_SECRET?.trim();
+  if (secret && secret.length >= MIN_SECRET_LENGTH) {
+    return new TextEncoder().encode(secret);
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      `AUTH_DEMO_SECRET must be set to at least ${MIN_SECRET_LENGTH} characters in production.`
+    );
+  }
+  return new TextEncoder().encode(secret || DEV_FALLBACK_SECRET);
 }
 
 export async function signAuthDemoSession(

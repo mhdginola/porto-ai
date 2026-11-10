@@ -14,6 +14,7 @@ import {
   replay,
   respond,
 } from "@/lib/payment-demo/server";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,8 @@ export const runtime = "nodejs";
  * A scheduled downgrade (paid → cheaper paid plan) takes effect here.
  */
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.paymentSim);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = renewSchema.safeParse(body);
   if (!parsed.success) {

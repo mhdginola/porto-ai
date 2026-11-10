@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { and, count, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { contactMessages } from "@/lib/db/schema";
@@ -9,17 +8,7 @@ const LIMITS = {
   perEmailDay: 5,
 };
 
-export function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  return (fwd?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "unknown").trim();
-}
-
-/** Salted hash so raw IPs are never stored. */
-export function hashIp(ip: string): string {
-  const salt =
-    process.env.CONTACT_IP_SALT?.trim() || process.env.AUTH_DEMO_SECRET?.trim() || "porto-contact";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
-}
+export { clientIp, hashIp } from "@/lib/rate-limit";
 
 async function countSince(column: "ip" | "email", value: string, sinceMs: number) {
   const since = new Date(Date.now() - sinceMs);

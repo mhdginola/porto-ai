@@ -4,10 +4,13 @@ import { establishAuthDemoSession } from "@/lib/auth-demo/establish-session";
 import { signupSchema } from "@/lib/auth-demo/schemas";
 import { db } from "@/lib/db";
 import { demoUsers } from "@/lib/db/schema";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.signup);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {

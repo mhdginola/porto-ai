@@ -1,6 +1,7 @@
 import { streamText } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { summarizeLanguageInstruction } from "@/lib/i18n/locale-prompt";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,6 +24,8 @@ function stylePrompt(style: Style, locale?: string) {
 }
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
   let body: { prompt?: string; style?: Style; model?: string; locale?: string };
   try {
     body = await req.json();

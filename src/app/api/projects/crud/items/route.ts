@@ -2,6 +2,7 @@ import { count, desc } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { demoItems } from "@/lib/db/schema";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = itemSchema.safeParse(body);
   if (!parsed.success) {

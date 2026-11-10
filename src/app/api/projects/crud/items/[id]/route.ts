@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { demoItems } from "@/lib/db/schema";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<Params> }
 ) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const { id: idParam } = await params;
   const id = parseId(idParam);
   if (id == null) {
@@ -59,9 +62,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<Params> }
 ) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const { id: idParam } = await params;
   const id = parseId(idParam);
   if (id == null) {

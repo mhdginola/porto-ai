@@ -204,12 +204,9 @@ Catatan:
   karena halaman demo mengecek status invoice ke Xendit (`GET /v2/invoices/:id`)
   sewaktu user kembali dari halaman pembayaran, plus polling selama ada invoice pending.
   Untuk menguji webhook asli secara lokal, pakai tunnel (mis. `ngrok http 3000`).
-- Perpanjangan memakai model invoice. Cron harian (`vercel.json` →
-  `/api/cron/payment-renewals`, 08:00 WIB) menerbitkan invoice periode berikutnya
-  3 hari sebelum periode berakhir, dan mengakhiri langganan yang dibatalkan atau tidak
-  dibayar setelah masa tenggang 3 hari. Set `CRON_SECRET` di Vercel (Vercel otomatis
-  mengirimnya sebagai `Authorization: Bearer …`). Tes manual:
-  `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/payment-renewals`.
+- Perpanjangan memakai model invoice. Cron harian (lihat "Keamanan & cron" di bawah)
+  menerbitkan invoice periode berikutnya 3 hari sebelum periode berakhir, dan mengakhiri
+  langganan yang dibatalkan atau tidak dibayar setelah masa tenggang 3 hari.
   Tombol "Buat invoice perpanjangan" di demo tetap ada sebagai pemicu manual.
 
 ### Integrasi dengan Auth demo (entitlements)
@@ -235,6 +232,24 @@ tidak dikirim. Catatan: akun demo bersama (mis. `admin@demo.local`) berbagi satu
    (tidak mengulang isi pesan) supaya form tidak bisa disalahgunakan untuk spam.
 
 Tanpa `RESEND_API_KEY`, pesan tetap tersimpan dan diklasifikasi — hanya email yang dilewati.
+
+## Keamanan & cron
+
+- **Rate limit** di semua endpoint publik (`src/lib/rate-limit.ts`), dihitung per IP (di-hash)
+  di tabel `rate_limit_hits` supaya berlaku di semua instance serverless. Semua endpoint AI
+  berbagi satu kuota: 15 request / 5 menit dan 100 / hari per IP, plus 3000 / hari global.
+  Endpoint berbayar lain (Google Places, upload PDF, invoice Xendit) punya batas sendiri.
+  Kalau database tidak bisa diakses, request tetap diizinkan (fail-open) dan error dicatat.
+- **Endpoint chat** (`/api/chat`, agent, Mini RAG) hanya menerima role `user`/`assistant`,
+  maks 4000 karakter per pesan, 12 pesan terakhir, body 64KB, dan jawaban maks 2048 token.
+- **Upload PDF**: maks 15MB / 150 halaman; jumlah halaman dicek sebelum ekstraksi/OCR.
+- **`AUTH_DEMO_SECRET` wajib** di produksi (min. 32 karakter), kalau tidak login auth demo
+  ditolak. Buat dengan `openssl rand -base64 48`.
+- **Cron harian** `/api/cron/daily` (`vercel.json`, 08:00 WIB) — butuh `CRON_SECRET`:
+  perpanjangan langganan Xendit + bersih-bersih data demo (akun signup pengunjung > 7 hari
+  beserta data pembayarannya, spam > 30 hari, item CRUD di atas 100, counter rate limit lama).
+  Akun seed `@demo.local` dan pesan kontak asli tidak pernah dihapus. Tes manual:
+  `curl -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/daily`.
 
 ## Scripts
 

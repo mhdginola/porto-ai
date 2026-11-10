@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -233,3 +234,19 @@ export const contactMessages = pgTable(
 );
 
 export type ContactMessageRow = typeof contactMessages.$inferSelect;
+
+/* ---------- Rate limiting (fixed-window counters, shared across instances) ---------- */
+
+export const rateLimitHits = pgTable(
+  "rate_limit_hits",
+  {
+    /** e.g. "ai:ip:<hash>:300" or "ai:global:86400" */
+    key: text("key").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(1),
+  },
+  (table) => [
+    primaryKey({ columns: [table.key, table.windowStart] }),
+    index("rate_limit_hits_window_idx").on(table.windowStart),
+  ]
+);

@@ -1,8 +1,10 @@
-import { streamText, type Message } from "ai";
+import { streamText } from "ai";
 import { aiModelResponseHeaders, chatModel } from "@/lib/ai";
 import { agentTools } from "@/lib/agent-tools";
 import { profile } from "@/content/profile";
 import { chatLanguageInstruction } from "@/lib/i18n/locale-prompt";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
+import { MAX_OUTPUT_TOKENS, parseChatBody } from "@/lib/chat-input";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -34,8 +36,11 @@ If no tool can answer an in-scope question, say so honestly and point to the con
 }
 
 export async function POST(req: Request) {
-  const { messages, locale }: { messages: Message[]; locale?: string } =
-    await req.json();
+  const limited = await rateLimit(req, POLICIES.ai);
+  if (limited) return limited;
+  const input = await parseChatBody(req);
+  if (!input.ok) return input.response;
+  const { messages, locale } = input.body;
 
   if (!process.env.GROQ_API_KEY?.trim()) {
     return Response.json(
@@ -51,6 +56,7 @@ export async function POST(req: Request) {
     tools: agentTools,
     maxSteps: 5,
     temperature: 0.3,
+    maxTokens: MAX_OUTPUT_TOKENS,
   });
 
   return result.toDataStreamResponse({

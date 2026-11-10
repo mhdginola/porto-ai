@@ -6,6 +6,7 @@ import {
   serializeSiteConfig,
   updateSiteSchema,
 } from "@/lib/property-agency/schemas";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,8 @@ export async function GET(req: Request, { params }: Params) {
 }
 
 export async function PATCH(req: Request, { params }: Params) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const { slug } = await params;
   const body = await req.json().catch(() => null);
   const parsed = updateSiteSchema.safeParse(body);
@@ -86,7 +89,9 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const { slug } = await params;
 
   try {

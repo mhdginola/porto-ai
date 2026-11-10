@@ -3,10 +3,13 @@ import {
   GooglePlacesError,
 } from "@/lib/google-places";
 import { parseLocale } from "@/lib/i18n/types";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.placesLookup);
+  if (limited) return limited;
   let body: { query?: string; locale?: string };
   try {
     body = await req.json();

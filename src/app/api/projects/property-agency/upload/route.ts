@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { uploadBufferToFirebaseStorage } from "@/lib/firebase/server-upload";
 import { getFirebaseConfig } from "@/lib/firebase/config";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,8 @@ async function saveLocalUpload(
 }
 
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.imageUpload);
+  if (limited) return limited;
   if (!getFirebaseConfig()) {
     return Response.json(
       { error: "Firebase is not configured in environment variables." },

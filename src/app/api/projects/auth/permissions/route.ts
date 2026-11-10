@@ -9,6 +9,7 @@ import {
   loadPermissionMatrix,
   savePermissionMatrix,
 } from "@/lib/auth-demo/permission-store";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -48,6 +49,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  const limited = await rateLimit(req, POLICIES.demoWrite);
+  if (limited) return limited;
   const user = await getAuthDemoSession();
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });

@@ -6,6 +6,7 @@ import {
   xenditDisabledResponse,
 } from "@/lib/payment-demo/route-helpers";
 import { startCheckout } from "@/lib/payment-demo/xendit-service";
+import { POLICIES, rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,8 @@ const schema = z.object({
 
 /** Creates a Xendit invoice for a new plan or an upgrade; returns its payment URL. */
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, POLICIES.xenditInvoice);
+  if (limited) return limited;
   const disabled = xenditDisabledResponse();
   if (disabled) return disabled;
   const parsed = schema.safeParse(await req.json().catch(() => null));
