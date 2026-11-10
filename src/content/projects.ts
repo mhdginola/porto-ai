@@ -239,6 +239,30 @@ order tables. All metrics and records are hardcoded — no backend required.`,
     liveUrl: "/projects/marketplace-demo",
   },
   {
+    slug: "payment-subscription-demo",
+    title: "Payment & Subscription Billing",
+    summary:
+      "SaaS billing flow — pricing plans, card checkout with 3-D Secure, proration, invoices, and webhook events.",
+    description: `Interactive subscription-billing demo modelled on how real payment gateways work.
+Pick a plan, pay with a test card (success, decline, insufficient funds, or 3-D Secure
+OTP), then upgrade with prorated credit, schedule a downgrade, cancel at period end, or
+fast-forward the clock to run the renewal job. A mock gateway in Next.js Route Handlers
+computes every amount server-side, validates cards (Luhn, expiry, CVC), honours
+idempotency keys, and emits webhook-style events.`,
+    tags: ["Next.js", "TypeScript", "Payments", "Subscriptions", "Zod", "REST API"],
+    visibility: "public",
+    category: "saas",
+    role: "Creator",
+    highlights: [
+      "Monthly / yearly plans with PPN 11% and IDR pricing",
+      "Card checkout with Luhn validation, test cards, and 3-D Secure OTP step",
+      "Prorated upgrades, scheduled downgrades, cancel & resume",
+      "Server-side pricing, idempotency keys, invoices, and webhook event log",
+    ],
+    year: 2026,
+    liveUrl: "/projects/payment-subscription-demo",
+  },
+  {
     slug: "property-agency-builder",
     title: "Property Agency Website Builder",
     summary:

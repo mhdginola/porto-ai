@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
@@ -122,3 +123,75 @@ export const propertyAgencySites = pgTable(
 
 export type PropertyAgencySite = typeof propertyAgencySites.$inferSelect;
 export type NewPropertyAgencySite = typeof propertyAgencySites.$inferInsert;
+
+/* ---------- Payment & Subscription demo — Xendit mode ---------- */
+
+/** One subscription per anonymous demo visitor (cookie `pay_demo_cid`). */
+export const paymentSubscriptions = pgTable("payment_subscriptions", {
+  id: text("id").primaryKey(),
+  customerId: text("customer_id").notNull().unique(),
+  planId: text("plan_id").notNull(),
+  cycle: text("cycle").notNull(),
+  /** active | ended */
+  status: text("status").notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+  scheduledPlanId: text("scheduled_plan_id"),
+  scheduledCycle: text("scheduled_cycle"),
+  /** Last Xendit channel used to pay, e.g. "BCA", "QRIS", "OVO". */
+  paymentChannel: text("payment_channel"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type PaymentSubscriptionRow = typeof paymentSubscriptions.$inferSelect;
+
+export const paymentInvoices = pgTable(
+  "payment_invoices",
+  {
+    id: text("id").primaryKey(),
+    customerId: text("customer_id").notNull(),
+    /** Our reference sent to Xendit as `external_id`. */
+    externalId: text("external_id").notNull().unique(),
+    xenditInvoiceId: text("xendit_invoice_id"),
+    invoiceUrl: text("invoice_url"),
+    number: text("number").notNull(),
+    /** subscription_create | subscription_update | subscription_cycle */
+    reason: text("reason").notNull(),
+    planId: text("plan_id").notNull(),
+    cycle: text("cycle").notNull(),
+    lines: jsonb("lines").$type<{ description: string; amount: number }[]>().notNull(),
+    subtotal: integer("subtotal").notNull(),
+    tax: integer("tax").notNull(),
+    total: integer("total").notNull(),
+    /** PENDING | PAID | EXPIRED */
+    status: text("status").notNull(),
+    paymentMethod: text("payment_method"),
+    paymentChannel: text("payment_channel"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("payment_invoices_customer_idx").on(table.customerId, table.createdAt),
+  ]
+);
+
+export type PaymentInvoiceRow = typeof paymentInvoices.$inferSelect;
+
+export const paymentEvents = pgTable(
+  "payment_events",
+  {
+    id: text("id").primaryKey(),
+    customerId: text("customer_id").notNull(),
+    type: text("type").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+    /** Set for inbound Xendit callbacks so retries are recorded once. */
+    dedupeKey: text("dedupe_key").unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("payment_events_customer_idx").on(table.customerId, table.createdAt),
+  ]
+);

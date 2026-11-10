@@ -255,6 +255,45 @@ Semua metrik dan data di-hardcode — tanpa backend.`,
       ],
     },
   },
+  "payment-subscription-demo": {
+    title: {
+      en: "Payment & Subscription Billing",
+      id: "Pembayaran & Langganan (Billing)",
+    },
+    summary: {
+      en: "SaaS billing flow — pricing plans, card checkout with 3-D Secure, proration, invoices, and webhook events.",
+      id: "Alur billing SaaS — paket harga, checkout kartu dengan 3-D Secure, proration, invoice, dan webhook event.",
+    },
+    description: {
+      en: `Interactive subscription-billing demo modelled on how real payment gateways work.
+Pick a plan, pay with a test card (success, decline, insufficient funds, or 3-D Secure
+OTP), then upgrade with prorated credit, schedule a downgrade, cancel at period end, or
+fast-forward the clock to run the renewal job. A mock gateway in Next.js Route Handlers
+computes every amount server-side, validates cards (Luhn, expiry, CVC), honours
+idempotency keys, and emits webhook-style events.`,
+      id: `Demo billing langganan interaktif yang meniru cara kerja payment gateway sungguhan.
+Pilih paket, bayar dengan kartu test (berhasil, ditolak, saldo kurang, atau OTP 3-D
+Secure), lalu upgrade dengan kredit proration, jadwalkan downgrade, batalkan di akhir
+periode, atau majukan jam untuk menjalankan job perpanjangan. Mock gateway di Route
+Handler Next.js menghitung semua nominal di server, memvalidasi kartu (Luhn, masa
+berlaku, CVC), mendukung idempotency key, dan mengirim event bergaya webhook.`,
+    },
+    role: { en: "Creator", id: "Pembuat" },
+    highlights: {
+      en: [
+        "Monthly / yearly plans with PPN 11% and IDR pricing",
+        "Card checkout with Luhn validation, test cards, and 3-D Secure OTP step",
+        "Prorated upgrades, scheduled downgrades, cancel & resume",
+        "Server-side pricing, idempotency keys, invoices, and webhook event log",
+      ],
+      id: [
+        "Paket bulanan / tahunan dengan PPN 11% dan harga IDR",
+        "Checkout kartu dengan validasi Luhn, kartu test, dan langkah OTP 3-D Secure",
+        "Upgrade dengan proration, downgrade terjadwal, batal & lanjutkan",
+        "Harga dihitung di server, idempotency key, invoice, dan log webhook event",
+      ],
+    },
+  },
   "property-agency-builder": {
     title: {
       en: "Property Agency Website Builder",

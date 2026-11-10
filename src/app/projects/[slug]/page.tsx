@@ -11,6 +11,7 @@ const STATIC_DEMO_SLUGS = new Set([
   "porto-ai",
   "marketplace-demo",
   "property-agency-builder",
+  "payment-subscription-demo",
 ]);
 
 export function generateStaticParams() {

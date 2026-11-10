@@ -177,6 +177,36 @@ Push ke GitHub, import di [Vercel](https://vercel.com/new), set env var:
 
 Lalu jalankan ingest sekali via CI atau lokal yang nunjuk ke DATABASE_URL produksi.
 
+## Demo Payment & Subscription (Xendit)
+
+`/projects/payment-subscription-demo` punya dua mode:
+
+- **Simulator** (default, tanpa setup): mock gateway di `/api/projects/payment/*`,
+  state disimpan di localStorage browser.
+- **Xendit (test)**: checkout lewat halaman invoice Xendit (VA, e-wallet, QRIS, kartu),
+  status pembayaran via webhook, data disimpan di Postgres. Tombol mode ini otomatis
+  aktif kalau `XENDIT_SECRET_KEY` diisi.
+
+Setup mode Xendit:
+
+1. `npm run db:push` — membuat tabel `payment_subscriptions`, `payment_invoices`, `payment_events`.
+2. Di [Xendit Dashboard](https://dashboard.xendit.co) (mode **Test**):
+   - Settings → API Keys → buat secret key (permission *Money-in: Write*) → `XENDIT_SECRET_KEY`.
+   - Settings → Webhooks → salin *verification token* → `XENDIT_CALLBACK_TOKEN`,
+     lalu isi URL **Invoices paid** dengan `https://<domain>/api/projects/payment/xendit/webhook`.
+3. Restart dev server.
+
+Catatan:
+
+- Hanya key test (`xnd_development_…`) yang diterima. Key live ditolak kecuali
+  `XENDIT_ALLOW_LIVE=true` — supaya portfolio publik tidak menerima uang sungguhan.
+- Webhook tidak bisa menjangkau `localhost`. Saat development, status tetap tersinkron
+  karena halaman demo mengecek status invoice ke Xendit (`GET /v2/invoices/:id`)
+  sewaktu user kembali dari halaman pembayaran, plus polling selama ada invoice pending.
+  Untuk menguji webhook asli secara lokal, pakai tunnel (mis. `ngrok http 3000`).
+- Perpanjangan memakai model invoice: tombol "Buat invoice perpanjangan" menerbitkan
+  invoice periode berikutnya (di produksi dijalankan cron sebelum periode berakhir).
+
 ## Scripts
 
 | Command             | Apa yang dilakukan               |
