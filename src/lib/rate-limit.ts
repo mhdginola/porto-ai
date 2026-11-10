@@ -52,6 +52,15 @@ export const POLICIES = {
     global: [{ limit: 200, windowSec: DAY }],
   },
   login: { bucket: "login", perIp: [{ limit: 10, windowSec: 10 * MIN }] },
+  /** Owner admin login — strict, plus a global cap against distributed guessing. */
+  adminLogin: {
+    bucket: "admin-login",
+    perIp: [
+      { limit: 5, windowSec: 15 * MIN },
+      { limit: 20, windowSec: DAY },
+    ],
+    global: [{ limit: 100, windowSec: DAY }],
+  },
   signup: {
     bucket: "signup",
     perIp: [

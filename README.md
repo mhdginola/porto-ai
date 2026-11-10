@@ -233,6 +233,21 @@ tidak dikirim. Catatan: akun demo bersama (mis. `admin@demo.local`) berbagi satu
 
 Tanpa `RESEND_API_KEY`, pesan tetap tersimpan dan diklasifikasi — hanya email yang dilewati.
 
+## Admin: kotak masuk lead
+
+`/admin/leads` — tempat membaca pesan dari contact form (tidak ada di navbar, `noindex`,
+diblokir di robots.txt). Aktif hanya kalau `ADMIN_PASSWORD` diisi (min. 12 karakter di
+produksi); tanpa itu semua `/admin` mengembalikan 404.
+
+- Login terpisah dari Auth demo (akun demo itu publik). Sesi cookie `HttpOnly`,
+  `SameSite=strict`, 12 jam; mengganti password otomatis mengeluarkan semua sesi.
+  Login dibatasi 5 percobaan / 15 menit per IP.
+- Statistik (belum dibaca, prioritas tinggi, spam), filter Inbox / Unread / Archived / Spam,
+  filter kategori, pencarian.
+- Detail pesan + ringkasan AI + draf balasan: "Reply with draft" membuka email dengan draf
+  terisi, atau "Copy". Tandai belum dibaca, arsipkan, spam / bukan spam, dan "Re-run AI"
+  untuk pesan yang gagal diklasifikasi.
+
 ## Keamanan & cron
 
 - **Rate limit** di semua endpoint publik (`src/lib/rate-limit.ts`), dihitung per IP (di-hash)

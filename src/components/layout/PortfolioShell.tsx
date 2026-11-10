@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ai/ChatWidget";
@@ -12,13 +13,16 @@ type Props = {
 
 export function PortfolioShell({ children, defaultModelRef }: Props) {
   const { active: previewActive } = usePropertyAgencyPreview();
+  const pathname = usePathname();
+  // Admin pages and the agency-site preview render without the portfolio chrome.
+  const bare = previewActive || pathname.startsWith("/admin");
 
   return (
     <>
-      {!previewActive ? <Navbar /> : null}
+      {!bare ? <Navbar /> : null}
       <main className="flex-1">{children}</main>
-      {!previewActive ? <Footer /> : null}
-      {!previewActive ? (
+      {!bare ? <Footer /> : null}
+      {!bare ? (
         <ChatWidget defaultModelRef={defaultModelRef} />
       ) : null}
     </>
