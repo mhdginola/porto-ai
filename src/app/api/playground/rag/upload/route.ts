@@ -3,6 +3,7 @@ import {
   playgroundDocuments,
   type NewPlaygroundDocument,
 } from "@/lib/db/schema";
+import { EMBEDDINGS_ENABLED } from "@/lib/ai";
 import { embedBatch, formatEmbeddingError } from "@/lib/embeddings";
 import { chunkText } from "@/lib/chunker";
 import {
@@ -95,15 +96,20 @@ export async function POST(req: Request) {
 
   const limited = chunks.slice(0, MAX_CHUNKS);
 
-  let embeddings: number[][];
-  try {
-    embeddings = await embedBatch(limited);
-  } catch (err) {
-    console.error("[mini-rag/upload] embed failed:", err);
-    return Response.json(
-      { error: formatEmbeddingError(err) },
-      { status: 503 },
-    );
+  // Embeddings are optional: without a provider (or if it fails) the PDF is
+  // stored for keyword (full-text) search only, instead of rejecting the upload.
+  let embeddings: (number[] | null)[] = limited.map(() => null);
+  let searchMode: "hybrid" | "keyword" = "keyword";
+  if (EMBEDDINGS_ENABLED) {
+    try {
+      embeddings = await embedBatch(limited);
+      searchMode = "hybrid";
+    } catch (err) {
+      console.warn(
+        "[mini-rag/upload] embedding failed, falling back to keyword search:",
+        formatEmbeddingError(err),
+      );
+    }
   }
 
   const sessionId = crypto.randomUUID();
@@ -127,5 +133,6 @@ export async function POST(req: Request) {
     pageCount,
     truncated: chunks.length > MAX_CHUNKS,
     extractionMethod,
+    searchMode,
   });
 }

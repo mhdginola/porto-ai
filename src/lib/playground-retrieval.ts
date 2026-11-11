@@ -6,11 +6,21 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   sql,
 } from "drizzle-orm";
+import { EMBEDDINGS_ENABLED } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { playgroundDocuments } from "@/lib/db/schema";
 import { embedOne } from "@/lib/embeddings";
+import { buildKeywordQuery, keywordCoverage } from "@/lib/rag";
+
+/**
+ * "hybrid": vector similarity + full-text candidates (session has embeddings).
+ * "keyword": full-text only — no embedding provider, or the PDF was uploaded
+ * without one. `similarity` then means keyword coverage (0–1).
+ */
+export type PlaygroundSearchMode = "hybrid" | "keyword";
 
 export type PlaygroundRetrievedChunk = {
   id: number;
@@ -188,48 +198,95 @@ function mergeGroup(
   };
 }
 
+let vectorWarned = false;
+
+async function sessionHasEmbeddings(sessionId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: playgroundDocuments.id })
+    .from(playgroundDocuments)
+    .where(and(eq(playgroundDocuments.sessionId, sessionId), isNotNull(playgroundDocuments.embedding)))
+    .limit(1);
+  return !!row;
+}
+
 export async function retrievePlaygroundChunks(
   sessionId: string,
   query: string
-): Promise<{ chunks: PlaygroundRetrievedChunk[]; maxSimilarity: number }> {
+): Promise<{
+  chunks: PlaygroundRetrievedChunk[];
+  maxSimilarity: number;
+  mode: PlaygroundSearchMode;
+}> {
   const queries = expandPlaygroundQueries(query);
   const byId = new Map<number, PlaygroundRetrievedChunk>();
+  const keep = (row: PlaygroundRetrievedChunk) => {
+    const prev = byId.get(row.id);
+    if (!prev || row.similarity > prev.similarity) byId.set(row.id, row);
+  };
+
+  let vectorOn = EMBEDDINGS_ENABLED && (await sessionHasEmbeddings(sessionId));
 
   for (const q of queries) {
-    const queryEmbedding = await embedOne(q);
-    const similarity = sql<number>`1 - (${cosineDistance(
-      playgroundDocuments.embedding,
-      queryEmbedding
-    )})`;
-
-    const rows = await db
-      .select({
-        id: playgroundDocuments.id,
-        chunkIndex: playgroundDocuments.chunkIndex,
-        content: playgroundDocuments.content,
-        similarity,
-      })
-      .from(playgroundDocuments)
-      .where(
-        and(
-          eq(playgroundDocuments.sessionId, sessionId),
-          gt(similarity, MIN_SIMILARITY)
-        )
-      )
-      .orderBy(desc(similarity))
-      .limit(20);
-
-    for (const row of rows) {
-      const prev = byId.get(row.id);
-      if (!prev || row.similarity > prev.similarity) {
-        byId.set(row.id, row);
+    let queryEmbedding: number[] | null = null;
+    if (vectorOn) {
+      try {
+        queryEmbedding = await embedOne(q);
+      } catch (err) {
+        vectorOn = false;
+        if (!vectorWarned) {
+          vectorWarned = true;
+          console.warn("[mini-rag] vector search unavailable, using keyword search only:", err);
+        }
       }
     }
+    const similarity = queryEmbedding
+      ? sql<number>`1 - (${cosineDistance(playgroundDocuments.embedding, queryEmbedding)})`
+      : sql<number>`0`;
+    const columns = {
+      id: playgroundDocuments.id,
+      chunkIndex: playgroundDocuments.chunkIndex,
+      content: playgroundDocuments.content,
+      similarity,
+    };
+
+    if (queryEmbedding) {
+      const rows = await db
+        .select(columns)
+        .from(playgroundDocuments)
+        .where(and(eq(playgroundDocuments.sessionId, sessionId), gt(similarity, MIN_SIMILARITY)))
+        .orderBy(desc(similarity))
+        .limit(20);
+      rows.forEach(keep);
+    }
+
+    // Full-text candidates: exact terms (article numbers, names, acronyms)
+    // that vector search can rank too low — and the only signal without embeddings.
+    const tsquery = buildKeywordQuery(q);
+    if (tsquery) {
+      const tsq = sql`to_tsquery('simple', ${tsquery})`;
+      const rows = await db
+        .select(columns)
+        .from(playgroundDocuments)
+        .where(
+          and(
+            eq(playgroundDocuments.sessionId, sessionId),
+            sql`${playgroundDocuments.searchTsv} @@ ${tsq}`
+          )
+        )
+        .orderBy(desc(sql`ts_rank(${playgroundDocuments.searchTsv}, ${tsq}, 32)`))
+        .limit(20);
+      rows.forEach(keep);
+    }
+  }
+
+  const mode: PlaygroundSearchMode = vectorOn ? "hybrid" : "keyword";
+  if (mode === "keyword") {
+    for (const row of byId.values()) row.similarity = keywordCoverage(query, row.content);
   }
 
   const merged = [...byId.values()];
   if (merged.length === 0) {
-    return { chunks: [], maxSimilarity: 0 };
+    return { chunks: [], maxSimilarity: 0, mode };
   }
 
   const maxKeyword = Math.max(
@@ -286,5 +343,6 @@ export async function retrievePlaygroundChunks(
       similarity,
     })),
     maxSimilarity,
+    mode,
   };
 }

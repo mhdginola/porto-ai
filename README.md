@@ -136,6 +136,10 @@ EMBEDDING_PROVIDER=none DATABASE_URL="<url produksi>" npm run db:ingest
 Chatbot memakai full-text search saja. Kalau nanti mau menambah vector, set
 `EMBEDDING_PROVIDER=openai` (+ `OPENAI_API_KEY`) dan ingest ulang.
 
+**Mini RAG** (upload PDF di `/playground/mini-rag`) memakai pendekatan yang sama: tanpa
+embedding, PDF tetap diindeks untuk full-text search dan penjaga "di luar topik" memakai
+cakupan kata kunci. Upload pengunjung dihapus otomatis setelah 24 jam oleh cron harian.
+
 ### Ganti provider
 
 Edit `.env.local`:

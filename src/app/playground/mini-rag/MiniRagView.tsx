@@ -30,6 +30,7 @@ type UploadInfo = {
   pageCount: number;
   truncated: boolean;
   extractionMethod?: "text" | "ocr";
+  searchMode?: "hybrid" | "keyword";
 };
 
 type Source = { id: number; chunkIndex: number; preview: string };
@@ -267,6 +268,12 @@ export function MiniRagView({ defaultModelRef }: Props) {
                     {upload.extractionMethod === "ocr" &&
                       ` · ${t("miniRag.indexedViaOcr")}`}
                     {upload.truncated && ` · ${t("miniRag.truncated")}`}
+                    {upload.searchMode &&
+                      ` · ${t(
+                        upload.searchMode === "hybrid"
+                          ? "miniRag.searchHybrid"
+                          : "miniRag.searchKeyword"
+                      )}`}
                   </p>
                 </div>
               </div>
@@ -399,12 +406,9 @@ export function MiniRagView({ defaultModelRef }: Props) {
       <p className="mt-10 text-xs text-foreground/50">
         Architecture: <code className="rounded bg-foreground/10 px-1 py-0.5">unpdf</code>{" "}
         for parsing ·{" "}
-        <code className="rounded bg-foreground/10 px-1 py-0.5">
-          Ollama nomic-embed-text
-        </code>{" "}
-        for embeddings ·{" "}
-        <code className="rounded bg-foreground/10 px-1 py-0.5">pgvector</code> for
-        retrieval ·{" "}
+        <code className="rounded bg-foreground/10 px-1 py-0.5">pgvector</code> +{" "}
+        <code className="rounded bg-foreground/10 px-1 py-0.5">Postgres full-text</code>{" "}
+        for hybrid retrieval (keyword-only when no embedding provider) ·{" "}
         <code className="rounded bg-foreground/10 px-1 py-0.5">
           {activeProvider === "ollama"
             ? "Ollama"

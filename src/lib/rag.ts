@@ -230,14 +230,39 @@ const SYNONYMS: Record<string, string[]> = {
 
 const MAX_KEYWORD_TERMS = 16;
 
+function tokenize(text: string): string[] {
+  return text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+/** Meaningful terms of a query (stopwords removed), without synonyms. */
+export function keywordTerms(query: string): string[] {
+  const terms = new Set<string>();
+  for (const token of tokenize(query)) {
+    if (token.length >= 2 && !STOPWORDS.has(token)) terms.add(token);
+  }
+  return [...terms].slice(0, MAX_KEYWORD_TERMS);
+}
+
+/**
+ * Share of the query's terms that occur in `content` (0–1), with the same
+ * prefix rule as the tsquery. Used as a relevance signal when no vector
+ * similarity is available.
+ */
+export function keywordCoverage(query: string, content: string): number {
+  const terms = keywordTerms(query);
+  if (terms.length === 0) return 0;
+  const words = new Set(tokenize(content));
+  const hit = (t: string) =>
+    t.length >= 4 ? [...words].some((w) => w.startsWith(t)) : words.has(t);
+  return terms.filter(hit).length / terms.length;
+}
+
 /** Turn free text into a to_tsquery() string: OR of terms, prefix-matched when ≥ 4 chars. */
 export function buildKeywordQuery(query: string): string | null {
-  const tokens = query.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [];
   const terms = new Set<string>();
-  for (const token of tokens) {
-    if (token.length < 2 || STOPWORDS.has(token)) continue;
-    terms.add(token);
-    for (const synonym of SYNONYMS[token] ?? []) terms.add(synonym);
+  for (const term of keywordTerms(query)) {
+    terms.add(term);
+    for (const synonym of SYNONYMS[term] ?? []) terms.add(synonym);
   }
   const list = [...terms].slice(0, MAX_KEYWORD_TERMS);
   if (list.length === 0) return null;

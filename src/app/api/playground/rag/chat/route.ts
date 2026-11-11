@@ -75,12 +75,14 @@ export async function POST(req: Request) {
   let context = "(no context)";
   let sources: Array<{ id: number; chunkIndex: number; preview: string }> = [];
   let maxSimilarity = 0;
+  let searchMode: "hybrid" | "keyword" = "hybrid";
 
   if (query.trim()) {
     try {
-      const { chunks, maxSimilarity: topSim } =
+      const { chunks, maxSimilarity: topSim, mode } =
         await retrievePlaygroundChunks(sessionId, query);
       maxSimilarity = topSim;
+      searchMode = mode;
 
       if (chunks.length > 0) {
         context = chunks
@@ -99,7 +101,7 @@ export async function POST(req: Request) {
 
   if (
     query.trim() &&
-    shouldRefuseOffTopic(query, maxSimilarity, sources.length > 0)
+    shouldRefuseOffTopic(query, maxSimilarity, sources.length > 0, searchMode)
   ) {
     return refusalResponse(miniRagOffTopicMessage(locale), model, []);
   }

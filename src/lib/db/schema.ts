@@ -59,7 +59,11 @@ export const playgroundDocuments = pgTable(
     chunkIndex: integer("chunk_index").notNull(),
     pageHint: text("page_hint"),
     content: text("content").notNull(),
-    embedding: vector("embedding", { dimensions: EMBEDDING_DIM }).notNull(),
+/** Null when uploaded without an embedding provider (keyword search only). */
+    embedding: vector("embedding", { dimensions: EMBEDDING_DIM }),
+    searchTsv: tsvector("search_tsv").generatedAlwaysAs(
+      sql`to_tsvector('simple', coalesce(content, ''))`
+    ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -67,6 +71,7 @@ export const playgroundDocuments = pgTable(
       "hnsw",
       table.embedding.op("vector_cosine_ops")
     ),
+    index("playground_documents_search_idx").using("gin", table.searchTsv),
     index("playground_documents_session_idx").on(table.sessionId),
   ]
 );

@@ -2,6 +2,8 @@ import { parseLocale } from "@/lib/i18n/types";
 
 /** Min cosine similarity of top chunk to allow generation. */
 export const MIN_RAG_SIMILARITY = 0.32;
+/** Keyword-only mode: min share of the question's terms found in the best chunk. */
+export const MIN_KEYWORD_COVERAGE = 0.3;
 
 const CODE_OR_GENERAL_PATTERNS = [
   /\bhello\s*world\b/i,
@@ -58,7 +60,8 @@ export function isDocumentSummaryQuery(query: string): boolean {
 export function shouldRefuseOffTopic(
   query: string,
   maxSimilarity: number,
-  hasChunks: boolean
+  hasChunks: boolean,
+  mode: "hybrid" | "keyword" = "hybrid"
 ): boolean {
   if (!query.trim()) return false;
 
@@ -68,5 +71,5 @@ export function shouldRefuseOffTopic(
 
   if (!hasChunks) return true;
 
-  return maxSimilarity < MIN_RAG_SIMILARITY;
+  return maxSimilarity < (mode === "keyword" ? MIN_KEYWORD_COVERAGE : MIN_RAG_SIMILARITY);
 }

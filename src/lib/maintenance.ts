@@ -9,6 +9,7 @@ import {
   demoItems,
   demoUsers,
   paymentEvents,
+  playgroundDocuments,
   paymentInvoices,
   paymentSubscriptions,
 } from "@/lib/db/schema";
@@ -25,6 +26,8 @@ const SEEDED_EMAILS = [
 const SIGNUP_RETENTION_DAYS = 7;
 const SPAM_RETENTION_DAYS = 30;
 const CRUD_KEEP_ITEMS = 100;
+/** Mini RAG sessions live only in the browser tab; uploads older than this are orphaned. */
+const PLAYGROUND_RETENTION_HOURS = 24;
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
@@ -33,6 +36,7 @@ export type MaintenanceResult = {
   spamMessages: number;
   signupUsers: number;
   crudItems: number;
+  playgroundChunks: number;
 };
 
 export async function runMaintenance(): Promise<MaintenanceResult> {
@@ -79,10 +83,21 @@ export async function runMaintenance(): Promise<MaintenanceResult> {
     .where(sql`${demoItems.id} not in (${keep})`)
     .returning({ id: demoItems.id });
 
+  const playground = await db
+    .delete(playgroundDocuments)
+    .where(
+      lt(
+        playgroundDocuments.createdAt,
+        new Date(Date.now() - PLAYGROUND_RETENTION_HOURS * 3_600_000)
+      )
+    )
+    .returning({ id: playgroundDocuments.id });
+
   return {
     rateLimitRows,
     spamMessages: spam.length,
     signupUsers,
     crudItems: crud.length,
+    playgroundChunks: playground.length,
   };
 }
