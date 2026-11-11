@@ -12,16 +12,30 @@ import {
   parseModelRef,
 } from "@/lib/chat-model-ref";
 
-export type EmbeddingProvider = "ollama" | "openai";
+export type EmbeddingProvider = "ollama" | "openai" | "none";
 export type { ChatProvider };
 
-export const EMBEDDING_PROVIDER: EmbeddingProvider =
-  (process.env.EMBEDDING_PROVIDER as EmbeddingProvider) ?? "ollama";
+/**
+ * "none" (or any unrecognised value, e.g. "groq", which has no embeddings API)
+ * turns vector search off: RAG then runs on Postgres full-text search only.
+ */
+function parseEmbeddingProvider(value: string | undefined): EmbeddingProvider {
+  const v = value?.trim().toLowerCase();
+  if (!v) return "ollama";
+  if (v === "ollama" || v === "openai") return v;
+  return "none";
+}
+
+export const EMBEDDING_PROVIDER: EmbeddingProvider = parseEmbeddingProvider(
+  process.env.EMBEDDING_PROVIDER
+);
+
+export const EMBEDDINGS_ENABLED = EMBEDDING_PROVIDER !== "none";
 
 export const CHAT_PROVIDER: ChatProvider =
   (process.env.CHAT_PROVIDER as ChatProvider) ?? "groq";
 
-export const EMBEDDING_DIM = EMBEDDING_PROVIDER === "ollama" ? 768 : 1536;
+export const EMBEDDING_DIM = EMBEDDING_PROVIDER === "openai" ? 1536 : 768;
 
 const EMBEDDING_MODEL =
   EMBEDDING_PROVIDER === "ollama"
@@ -42,6 +56,9 @@ const ollama = createOpenAI({
 });
 
 export function embeddingModel() {
+  if (EMBEDDING_PROVIDER === "none") {
+    throw new Error("Embeddings are disabled (EMBEDDING_PROVIDER=none)");
+  }
   if (EMBEDDING_PROVIDER === "ollama") {
     return ollama.embedding(EMBEDDING_MODEL);
   }

@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -14,6 +16,10 @@ import {
 
 export const EMBEDDING_DIM = 768;
 
+const tsvector = customType<{ data: string }>({
+  dataType: () => "tsvector",
+});
+
 export const documents = pgTable(
   "documents",
   {
@@ -24,10 +30,16 @@ export const documents = pgTable(
     url: text("url"),
     content: text("content").notNull(),
     metadata: text("metadata"),
-    embedding: vector("embedding", { dimensions: EMBEDDING_DIM }).notNull(),
+    /** Null when ingested without an embedding provider (keyword search only). */
+    embedding: vector("embedding", { dimensions: EMBEDDING_DIM }),
+    /** Full-text index over title (weight A) + content (B); "simple" config suits EN + ID text. */
+    searchTsv: tsvector("search_tsv").generatedAlwaysAs(
+      sql`setweight(to_tsvector('simple', coalesce(title, '')), 'A') || setweight(to_tsvector('simple', coalesce(content, '')), 'B')`
+    ),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
+    index("documents_search_idx").using("gin", table.searchTsv),
     index("documents_embedding_idx").using(
       "hnsw",
       table.embedding.op("vector_cosine_ops")

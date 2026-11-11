@@ -2,6 +2,7 @@ import "./_loadEnv";
 
 import { db } from "@/lib/db";
 import { documents, type NewDocument } from "@/lib/db/schema";
+import { EMBEDDING_PROVIDER, EMBEDDINGS_ENABLED } from "@/lib/ai";
 import { embedBatch } from "@/lib/embeddings";
 import {
   certifications,
@@ -219,9 +220,19 @@ function buildDocs(): DraftDoc[] {
 
 async function main() {
   const drafts = buildDocs();
-  console.log(`→ Built ${drafts.length} chunks. Embedding...`);
 
-  const embeddings = await embedBatch(drafts.map((d) => d.content));
+  // Without an embedding provider, documents are stored for keyword (full-text)
+  // search only; re-run ingest after enabling embeddings to add vectors.
+  let embeddings: (number[] | null)[];
+  if (EMBEDDINGS_ENABLED) {
+    console.log(`→ Built ${drafts.length} chunks. Embedding with ${EMBEDDING_PROVIDER}...`);
+    embeddings = await embedBatch(drafts.map((d) => d.content));
+  } else {
+    console.log(
+      `→ Built ${drafts.length} chunks. EMBEDDING_PROVIDER=none → keyword search only (no vectors).`
+    );
+    embeddings = drafts.map(() => null);
+  }
 
   console.log("→ Clearing existing documents...");
   await db.delete(documents);

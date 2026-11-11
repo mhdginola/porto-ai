@@ -1,8 +1,16 @@
-import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
+import { and, cosineDistance, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
+import { EMBEDDINGS_ENABLED } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { embedOne } from "@/lib/embeddings";
 import { profile } from "@/content/profile";
+
+/**
+ * Hybrid retrieval: pgvector similarity + Postgres full-text search, fused with
+ * Reciprocal Rank Fusion. Keyword search needs no external API, so retrieval
+ * keeps working when no embedding provider is available (EMBEDDING_PROVIDER=none),
+ * and it catches exact terms (e.g. "Xendit") that embeddings can miss.
+ */
 
 export type RetrievedChunk = {
   id: number;
@@ -35,17 +43,18 @@ const INTENT_PATTERNS: { intent: SearchIntent; pattern: RegExp }[] = [
   {
     intent: "education",
     pattern:
-      /pendidikan|lulusan|kuliah|universitas|gpa|cum\s*laude|education|degree|university|graduate/i,
+      /pendidikan|lulusan|kuliah|universitas|sekolah|gpa|cum\s*laude|education|degree|university|graduate|stud(y|ied)|school/i,
   },
   {
     intent: "projects",
     pattern:
-      /project|proyek|portfolio|built|shipped|aml|blockchain|rag|portdex/i,
+      /project|proyek|portfolio|built|shipped|\baml\b|blockchain|\brag\b|portdex/i,
   },
   {
     intent: "skills",
     pattern:
-      /skill|keahlian|stack|teknologi|tech|backend|frontend|database|devops|blockchain|ai\b/i,
+      // Word boundaries matter: a bare `ai\b` also matched "pakai".
+      /skill|keahlian|stack|teknologi|tech|backend|frontend|database|devops|blockchain|\bai\b/i,
   },
 ];
 
@@ -138,7 +147,16 @@ function sourceBoost(intent: SearchIntent, source: string): number {
   return preferred[intent].includes(source) ? 0.12 : 0;
 }
 
-async function searchOnce(
+const SELECT_COLUMNS = {
+  id: documents.id,
+  source: documents.source,
+  sourceId: documents.sourceId,
+  title: documents.title,
+  content: documents.content,
+  url: documents.url,
+};
+
+async function searchVector(
   query: string,
   minSimilarity: number,
   fetchLimit: number
@@ -151,53 +169,153 @@ async function searchOnce(
   )})`;
 
   return db
-    .select({
-      id: documents.id,
-      source: documents.source,
-      sourceId: documents.sourceId,
-      title: documents.title,
-      content: documents.content,
-      url: documents.url,
-      similarity,
-    })
+    .select({ ...SELECT_COLUMNS, similarity })
     .from(documents)
-    .where(gt(similarity, minSimilarity))
+    .where(and(isNotNull(documents.embedding), gt(similarity, minSimilarity)))
     .orderBy(desc(similarity))
     .limit(fetchLimit);
 }
 
-function mergeResults(
-  batches: RetrievedChunk[][],
+/* ---------- keyword (full-text) search ---------- */
+
+/** EN + ID function words that would otherwise match every document. */
+const STOPWORDS = new Set(
+  `a an and are as at be been but by can could did do does for from had has have he her
+  his how i if in into is it its me my of on or our she so than that the their them then
+  there these they this to was we were what when where which who why will with would you
+  your about any all also just more most other some such only own same very tell show give
+  list please know ada adalah agar akan aku anda apa apakah atau bagaimana bahwa banyak
+  beliau belum bisa boleh buat bukan dalam dan dari dengan di dia ini itu jadi juga kalau
+  kami kamu kan karena ke kenapa kita mana masih mau mereka nya oleh pada para pernah punya
+  saja saya sebagai sedang sekarang semua siapa sudah tahu tanya tentang tolong untuk yang
+  sih dong deh kah lah mas mbak pak bu kak`
+    .split(/\s+/)
+    .filter(Boolean)
+);
+
+// The owner's name appears in almost every chunk, so it carries no signal.
+for (const part of profile.name.toLowerCase().split(/\s+/)) STOPWORDS.add(part);
+
+/** Small ID → EN bridge for terms whose documents are mostly in English. */
+const SYNONYMS: Record<string, string[]> = {
+  pembayaran: ["payment"],
+  bayar: ["payment"],
+  langganan: ["subscription"],
+  berlangganan: ["subscription"],
+  pengalaman: ["experience"],
+  kerja: ["work"],
+  pekerjaan: ["work", "job"],
+  proyek: ["project"],
+  projek: ["project"],
+  keahlian: ["skills"],
+  kemampuan: ["skills"],
+  pendidikan: ["education"],
+  study: ["education", "university"],
+  studied: ["education", "university"],
+  school: ["education"],
+  kuliah: ["university", "education"],
+  kampus: ["university"],
+  perusahaan: ["company"],
+  sertifikat: ["certification"],
+  sertifikasi: ["certification"],
+  publikasi: ["publication"],
+  jurnal: ["publication"],
+  integrasi: ["integration"],
+  aplikasi: ["application", "app"],
+  situs: ["website"],
+  dasbor: ["dashboard"],
+  keamanan: ["security"],
+  pelanggan: ["customer"],
+};
+
+const MAX_KEYWORD_TERMS = 16;
+
+/** Turn free text into a to_tsquery() string: OR of terms, prefix-matched when ≥ 4 chars. */
+export function buildKeywordQuery(query: string): string | null {
+  const tokens = query.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [];
+  const terms = new Set<string>();
+  for (const token of tokens) {
+    if (token.length < 2 || STOPWORDS.has(token)) continue;
+    terms.add(token);
+    for (const synonym of SYNONYMS[token] ?? []) terms.add(synonym);
+  }
+  const list = [...terms].slice(0, MAX_KEYWORD_TERMS);
+  if (list.length === 0) return null;
+  // Tokens contain only letters/digits, so they are safe tsquery operands.
+  return list.map((t) => (t.length >= 4 ? `${t}:*` : t)).join(" | ");
+}
+
+async function searchKeyword(query: string, fetchLimit: number): Promise<RetrievedChunk[]> {
+  const tsquery = buildKeywordQuery(query);
+  if (!tsquery) return [];
+  const q = sql`to_tsquery('simple', ${tsquery})`;
+  const rank = sql<number>`ts_rank(${documents.searchTsv}, ${q}, 32)`;
+  return db
+    .select({ ...SELECT_COLUMNS, similarity: rank })
+    .from(documents)
+    .where(sql`${documents.searchTsv} @@ ${q}`)
+    .orderBy(desc(rank))
+    .limit(fetchLimit);
+}
+
+/* ---------- fusion ---------- */
+
+/** Reciprocal Rank Fusion constant (standard value from the RRF paper). */
+const RRF_K = 60;
+const SOURCE_BOOST = 1.25;
+
+let vectorWarned = false;
+
+/** Vector results for every query, or [] if embeddings are off / unavailable. */
+async function vectorLists(
+  queries: string[],
+  minSimilarity: number,
+  fetchLimit: number
+): Promise<RetrievedChunk[][]> {
+  if (!EMBEDDINGS_ENABLED) return [];
+  try {
+    return await Promise.all(queries.map((q) => searchVector(q, minSimilarity, fetchLimit)));
+  } catch (err) {
+    if (!vectorWarned) {
+      vectorWarned = true;
+      console.warn("[rag] vector search unavailable, using keyword search only:", err);
+    }
+    return [];
+  }
+}
+
+/**
+ * Fuse ranked lists with RRF (rank-based, so cosine similarities and ts_rank
+ * scores never need to be on the same scale). `similarity` on the result is the
+ * fused score normalised to 0–1.
+ */
+function fuseResults(
+  lists: RetrievedChunk[][],
   intent: SearchIntent,
   topK: number
 ): RetrievedChunk[] {
-  const byId = new Map<number, RetrievedChunk>();
-
-  for (const batch of batches) {
-    for (const row of batch) {
-      const boosted = {
-        ...row,
-        similarity: row.similarity + sourceBoost(intent, row.source),
-      };
-      const prev = byId.get(row.id);
-      if (!prev || boosted.similarity > prev.similarity) {
-        byId.set(row.id, boosted);
-      }
-    }
+  const scores = new Map<number, { row: RetrievedChunk; score: number }>();
+  for (const list of lists) {
+    list.forEach((row, index) => {
+      const entry = scores.get(row.id) ?? { row, score: 0 };
+      entry.score += 1 / (RRF_K + index + 1);
+      scores.set(row.id, entry);
+    });
   }
 
-  const sorted = [...byId.values()].sort((a, b) => b.similarity - a.similarity);
+  const fused = [...scores.values()].map(({ row, score }) => ({
+    ...row,
+    similarity: score * (sourceBoost(intent, row.source) > 0 ? SOURCE_BOOST : 1),
+  }));
+  const max = Math.max(...fused.map((r) => r.similarity), 0) || 1;
+  const sorted = fused
+    .map((r) => ({ ...r, similarity: r.similarity / max }))
+    .sort((a, b) => b.similarity - a.similarity);
 
   if (intent === "experience") {
+    // Include every experience chunk, then fill remaining slots.
     const experience = sorted.filter((r) => r.source === "experience");
-    const rest = sorted.filter((r) => r.source !== "experience");
-    // Include every experience chunk, then fill remaining slots
-    const picked = [...experience, ...rest];
-    const unique = new Map<number, RetrievedChunk>();
-    for (const row of picked) unique.set(row.id, row);
-    return [...unique.values()]
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, Math.max(topK, experience.length));
+    return sorted.slice(0, Math.max(topK, experience.length));
   }
 
   return sorted.slice(0, topK);
@@ -215,12 +333,14 @@ export async function retrieveRelevantChunks(
   }
 
   const queries = augmentedQueries(query, intent);
+  const fetchLimit = topK + 8;
 
-  const batches = await Promise.all(
-    queries.map((q) => searchOnce(q, minSimilarity, topK + 8))
-  );
+  const [vector, keyword] = await Promise.all([
+    vectorLists(queries, minSimilarity, fetchLimit),
+    Promise.all(queries.map((q) => searchKeyword(q, fetchLimit))),
+  ]);
 
-  return mergeResults(batches, intent, topK);
+  return fuseResults([...vector, ...keyword], intent, topK);
 }
 
 export function formatChunksForPrompt(chunks: RetrievedChunk[]): string {

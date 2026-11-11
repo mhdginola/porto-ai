@@ -91,32 +91,50 @@ Jawabannya sekarang berbasis **retrieval** dari konten yang kamu ingest, dengan
 
 ## Cara kerja RAG
 
+Pencarian **hybrid**: vector (makna) + full-text Postgres (kata kunci), digabung dengan
+Reciprocal Rank Fusion. Full-text tidak butuh API apa pun, jadi chatbot tetap punya
+konteks walau tidak ada embedding provider (mis. di Vercel) — dan menangkap istilah
+spesifik seperti "Xendit" yang kadang lolos dari vector search.
+
 ```
 User query
     │
-    ▼
-embed via Ollama (nomic-embed-text, 768d, lokal)
+    ├──► embed (Ollama nomic-embed-text / OpenAI) ──► cosine search pgvector (HNSW)
+    │       (dilewati kalau EMBEDDING_PROVIDER=none)
     │
-    ▼
-cosine similarity search di pgvector (HNSW index)
-    │
-    ▼
-top-8 chunks → disuntik ke system prompt
-    │
-    ▼
+    └──► kata kunci (buang stopword EN/ID + sinonim ID→EN) ──► full-text search (GIN)
+                          │
+                          ▼
+         Reciprocal Rank Fusion → top-8 chunks → system prompt
+                          │
+                          ▼
 streamText via Groq (openai/gpt-oss-120b) → response + sumber (x-rag-sources header)
 ```
 
 File-file kunci:
 
-- `src/lib/ai.ts` — provider config (Ollama/OpenAI untuk embed, Groq/OpenAI untuk chat)
-- `src/lib/db/schema.ts` — tabel `documents` dengan kolom `vector(768)`
-- `src/lib/rag.ts` — `retrieveRelevantChunks()` dengan cosine distance
+- `src/lib/ai.ts` — provider config (`EMBEDDING_PROVIDER`: `ollama` | `openai` | `none`)
+- `src/lib/db/schema.ts` — tabel `documents`: `embedding vector(768)` (boleh kosong) +
+  `search_tsv` (tsvector, dihitung otomatis dari title + content)
+- `src/lib/rag.ts` — `retrieveRelevantChunks()`: vector + keyword + RRF
 - `src/lib/embeddings.ts` — wrapper `embed` / `embedMany`
 - `scripts/ingest.ts` — chunker + batch embed + insert (project di-ingest dalam EN dan ID;
-  setiap chunk diberi header nama project supaya detail di chunk lanjutan tetap ketemu)
+  setiap chunk diberi header nama project supaya detail di chunk lanjutan tetap ketemu).
+  Dengan `EMBEDDING_PROVIDER=none` dokumen disimpan tanpa vector (keyword saja).
 - `src/app/api/chat/route.ts` — RAG-augmented streaming endpoint
 - `src/components/ai/ChatWidget.tsx` — UI + parsing `x-rag-sources` header
+
+### Produksi tanpa embedding (gratis)
+
+Di Vercel tidak ada Ollama. Set `EMBEDDING_PROVIDER=none`, lalu ingest ke database
+produksi tanpa vector:
+
+```bash
+EMBEDDING_PROVIDER=none DATABASE_URL="<url produksi>" npm run db:ingest
+```
+
+Chatbot memakai full-text search saja. Kalau nanti mau menambah vector, set
+`EMBEDDING_PROVIDER=openai` (+ `OPENAI_API_KEY`) dan ingest ulang.
 
 ### Ganti provider
 
@@ -193,7 +211,7 @@ Push ke GitHub, import di [Vercel](https://vercel.com/new), lalu set env var
 | `DATABASE_URL` | Postgres + pgvector (mis. Supabase / Neon) |
 | `NEXT_PUBLIC_SITE_URL` | URL produksi (dipakai untuk redirect Xendit) |
 | `CHAT_PROVIDER`, `GROQ_API_KEY` | chat AI (Groq) |
-| `EMBEDDING_PROVIDER` + key | embeddings untuk RAG: `openai` (+ `OPENAI_API_KEY`) atau `ollama` |
+| `EMBEDDING_PROVIDER` | `none` (gratis, keyword saja) atau `openai` (+ `OPENAI_API_KEY`) |
 | `AUTH_DEMO_SECRET` | **wajib**, min. 32 karakter |
 | `CRON_SECRET` | **wajib** untuk cron harian |
 | `XENDIT_SECRET_KEY`, `XENDIT_CALLBACK_TOKEN` | opsional — mode Xendit |
@@ -316,7 +334,8 @@ produksi); tanpa itu semua `/admin` mengembalikan 404.
 - [x] Rate limiting + validasi input di semua endpoint publik
 - [ ] "Tanya tentang project ini" — chatbot per halaman project
 - [ ] MDX blog dengan auto-ingest ke RAG
-- [ ] Re-ranker / hybrid search (keyword + vector) untuk RAG
+- [x] Hybrid search RAG (keyword + vector) — jalan juga tanpa embedding provider
+- [ ] Re-ranker untuk RAG
 - [ ] Test otomatis + CI (typecheck, lint, build)
 
 ## Lisensi
