@@ -22,6 +22,7 @@ export async function establishAuthDemoSession(user: {
   email: string;
   name: string;
   role: string;
+  walletAddress?: string | null;
 }): Promise<AuthDemoSession> {
   const role = parseAuthDemoRole(user.role);
   if (!role) {
@@ -33,6 +34,7 @@ export async function establishAuthDemoSession(user: {
     email: user.email,
     name: user.name,
     role,
+    walletAddress: user.walletAddress ?? null,
   };
 
   const token = await signAuthDemoSession(session);

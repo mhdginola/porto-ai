@@ -266,6 +266,25 @@ ke browser. Modul dashboard butuh **role** yang sesuai (RBAC) **dan** **paket** 
 Akses dihitung di server (`GET /api/projects/auth/modules`) dan data modul yang terkunci
 tidak dikirim. Catatan: akun demo bersama (mis. `admin@demo.local`) berbagi satu langganan.
 
+## Web3: Sign-In with Ethereum + token gating
+
+Di `/projects/auth-demo` ada tombol **"Sign in with wallet"** (MetaMask, Rabby, Coinbase
+Wallet extension). Alurnya standar EIP-4361 dengan `viem`:
+
+1. `GET /api/projects/auth/siwe/nonce` — nonce acak, juga disimpan di cookie httpOnly bertanda tangan (5 menit).
+2. Wallet menandatangani pesan SIWE (gratis, tanpa transaksi).
+3. `POST /api/projects/auth/siwe/verify` — server mengecek domain, Origin, nonce, dan waktu
+   **sebelum** tanda tangan; nonce dibakar di database (sekali pakai, replay ditolak).
+   Wallet biasa diverifikasi lokal; smart wallet (ERC-1271/6492) via RPC Base Sepolia.
+   Akun dibuat otomatis (role viewer) dan terikat ke `demo_users.wallet_address`.
+
+Modul **"Token-gated vault"** di dashboard hanya terbuka kalau wallet memegang ≥ 1 USDC
+testnet di **Base Sepolia** — saldo dibaca on-chain oleh server (`balanceOf`, cache 30 detik).
+USDC testnet gratis dari [faucet.circle.com](https://faucet.circle.com).
+
+Env opsional: `TOKEN_GATE_RPC_URL` (RPC sendiri, mis. Alchemy — RPC publik dibatasi),
+`TOKEN_GATE_ADDRESS`, `TOKEN_GATE_SYMBOL`, `TOKEN_GATE_MIN`.
+
 ## Smart contact form
 
 `/contact` punya form yang disortir AI (`POST /api/contact`):
@@ -336,6 +355,8 @@ produksi); tanpa itu semua `/admin` mengembalikan 404.
 - [x] Demo Payment & Subscription dengan integrasi Xendit + entitlement di Auth demo
 - [x] Kotak masuk admin untuk lead
 - [x] Rate limiting + validasi input di semua endpoint publik
+- [x] Sign-In with Ethereum + modul token-gated (Base Sepolia)
+- [ ] Bayar langganan dengan stablecoin testnet (smart contract + Foundry)
 - [ ] "Tanya tentang project ini" — chatbot per halaman project
 - [ ] MDX blog dengan auto-ingest ke RAG
 - [x] Hybrid search RAG (keyword + vector) — jalan juga tanpa embedding provider

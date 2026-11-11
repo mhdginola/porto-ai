@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Users,
   Eye,
+  Wallet,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
@@ -92,6 +93,12 @@ const MODULE_META: {
     icon: Users,
     titleKey: "authDemo.panel.users",
     descKey: "authDemo.panel.usersDesc",
+  },
+  {
+    id: "vault",
+    icon: Wallet,
+    titleKey: "authDemo.panel.vault",
+    descKey: "authDemo.panel.vaultDesc",
   },
   {
     id: "settings",
@@ -231,7 +238,7 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
   const stats = [
     {
       labelKey: "authDemo.stat.modules" as const,
-      value: `${allowedCount}/4`,
+      value: `${allowedCount}/${access?.modules.length ?? AUTH_DEMO_MODULE_IDS.length}`,
       trend: t("authDemo.stat.modulesTrend"),
       icon: LayoutDashboard,
     },
@@ -310,7 +317,21 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
               <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
                 {user.name}
               </h2>
-              <p className="mt-1 text-sm text-foreground/60">{user.email}</p>
+              {user.walletAddress ? (
+                <a
+                  href={access?.tokenGate.walletUrl ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-1.5 font-mono text-sm text-foreground/60 hover:text-primary-text"
+                  title={user.walletAddress}
+                >
+                  <Wallet className="h-3.5 w-3.5" />
+                  {user.walletAddress.slice(0, 6)}…{user.walletAddress.slice(-4)}
+                  <ArrowUpRight className="h-3 w-3" />
+                </a>
+              ) : (
+                <p className="mt-1 text-sm text-foreground/60">{user.email}</p>
+              )}
               <span
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
@@ -429,12 +450,31 @@ export function AuthDemoDashboard({ user, onLogout, t }: Props) {
                                 "{plan}",
                                 getPlan(m.requiredPlan).name
                               )
-                            : t("authDemo.accessDeniedRole")}
+                            : m.reason === "wallet"
+                              ? t("authDemo.accessDeniedWallet")
+                              : m.reason === "token" && access
+                                ? t("authDemo.accessDeniedToken")
+                                    .replace("{min}", String(access.tokenGate.minBalance))
+                                    .replace("{symbol}", access.tokenGate.tokenSymbol)
+                                : m.reason === "rpc"
+                                  ? t("authDemo.accessDeniedRpc")
+                                  : t("authDemo.accessDeniedRole")}
                     </span>
                     {allowed && m?.data && m.data.stat !== "—" && (
                       <span className="text-xs font-mono text-foreground/45">
                         {m.data.stat}
                       </span>
+                    )}
+                    {m?.reason === "token" && access && (
+                      <a
+                        href={access.tokenGate.faucetUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary-text hover:underline"
+                      >
+                        {t("authDemo.getTestTokens").replace("{symbol}", access.tokenGate.tokenSymbol)}
+                        <ArrowUpRight className="h-3 w-3" />
+                      </a>
                     )}
                     {m?.reason === "plan" && access?.billingEnabled && (
                       <Link

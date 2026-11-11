@@ -14,7 +14,7 @@ const MIN_SECRET_LENGTH = 32;
  * JWT signing key. In production a real secret is mandatory: with a public
  * fallback anyone could forge a superadmin session cookie.
  */
-function getSecret() {
+export function authDemoSigningKey() {
   const secret = process.env.AUTH_DEMO_SECRET?.trim();
   if (secret && secret.length >= MIN_SECRET_LENGTH) {
     return new TextEncoder().encode(secret);
@@ -35,18 +35,19 @@ export async function signAuthDemoSession(
     email: user.email,
     name: user.name,
     role: user.role,
+    ...(user.walletAddress && { wallet: user.walletAddress }),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_MAX_AGE}s`)
-    .sign(getSecret());
+    .sign(authDemoSigningKey());
 }
 
 export async function verifyAuthDemoToken(
   token: string
 ): Promise<AuthDemoSession | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, authDemoSigningKey());
     const id = Number(payload.sub);
     const email = payload.email;
     const name = payload.name;
@@ -62,7 +63,8 @@ export async function verifyAuthDemoToken(
     ) {
       return null;
     }
-    return { id, email, name, role };
+    const wallet = typeof payload.wallet === "string" ? payload.wallet : null;
+    return { id, email, name, role, walletAddress: wallet };
   } catch {
     return null;
   }

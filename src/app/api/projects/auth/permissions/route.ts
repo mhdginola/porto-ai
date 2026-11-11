@@ -18,6 +18,7 @@ const moduleRecordSchema = z.object({
   content: z.boolean(),
   users: z.boolean(),
   settings: z.boolean(),
+  vault: z.boolean(),
 });
 
 const updateSchema = z.object({

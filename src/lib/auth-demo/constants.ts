@@ -12,6 +12,8 @@ export type AuthDemoUser = {
   email: string;
   name: string;
   role: AuthDemoRole;
+  /** Checksummed address when signed in with a wallet (SIWE). */
+  walletAddress?: string | null;
 };
 
 export type AuthDemoSession = AuthDemoUser;

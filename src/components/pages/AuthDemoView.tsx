@@ -16,6 +16,7 @@ import {
   validateSignupForm,
 } from "@/lib/auth-demo/validate-form";
 import { AuthDemoDashboard } from "@/components/pages/AuthDemoDashboard";
+import { WalletSignInButton } from "@/components/auth-demo/WalletSignInButton";
 import { cn } from "@/lib/utils";
 
 const DEMO_ACCOUNTS = [
@@ -316,6 +317,13 @@ export function AuthDemoView() {
                 )}
               </Button>
             </form>
+            <WalletSignInButton
+              t={t}
+              onSignedIn={(signedIn) => {
+                setUser(signedIn);
+                resetAuthForm();
+              }}
+            />
           </div>
 
           <div className="rounded-xl border border-foreground/10 p-5">

@@ -98,6 +98,8 @@ export const demoUsers = pgTable("demo_users", {
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
   role: text("role").notNull(),
+  /** Lower-cased EVM address for users who signed in with Ethereum (SIWE). */
+  walletAddress: text("wallet_address").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

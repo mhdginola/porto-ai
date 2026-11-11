@@ -5,6 +5,8 @@ export const AUTH_DEMO_MODULE_IDS = [
   "content",
   "users",
   "settings",
+  /** Token-gated: open to every role, but needs a wallet holding the gate token. */
+  "vault",
 ] as const;
 
 export type AuthDemoModuleId = (typeof AUTH_DEMO_MODULE_IDS)[number];
@@ -32,18 +34,21 @@ export const DEFAULT_PERMISSION_MATRIX: PermissionMatrix = {
     content: false,
     users: false,
     settings: false,
+    vault: true,
   },
   editor: {
     analytics: true,
     content: true,
     users: false,
     settings: false,
+    vault: true,
   },
   admin: {
     analytics: true,
     content: true,
     users: true,
     settings: true,
+    vault: true,
   },
 };
 

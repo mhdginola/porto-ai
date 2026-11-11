@@ -11,6 +11,7 @@ export const MODULE_MIN_PLAN: Record<AuthDemoModuleId, PlanId> = {
   content: "free",
   users: "pro", // team management
   settings: "business", // SSO & audit log
+  vault: "free", // gated by token ownership instead (see /api/projects/auth/modules)
 };
 
 /** Days a subscription keeps its features after an unpaid renewal date. */

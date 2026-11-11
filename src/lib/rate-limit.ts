@@ -52,6 +52,7 @@ export const POLICIES = {
     global: [{ limit: 200, windowSec: DAY }],
   },
   login: { bucket: "login", perIp: [{ limit: 10, windowSec: 10 * MIN }] },
+  siweNonce: { bucket: "siwe-nonce", perIp: [{ limit: 30, windowSec: 10 * MIN }] },
   /** Owner admin login — strict, plus a global cap against distributed guessing. */
   adminLogin: {
     bucket: "admin-login",
@@ -160,6 +161,21 @@ export async function rateLimit(req: Request, policy: Policy): Promise<Response 
     },
     { status: 429, headers: { "Retry-After": String(retryAfter) } }
   );
+}
+
+/**
+ * One-time tokens (e.g. SIWE nonces): returns true the first time `key` is
+ * claimed, false on every later attempt. Stored in the same table so the daily
+ * prune cleans it up. Throws if the database is unavailable — callers must
+ * fail closed.
+ */
+export async function claimOnce(key: string): Promise<boolean> {
+  const rows = await db
+    .insert(rateLimitHits)
+    .values({ key: `once:${key}`, windowStart: new Date(0), count: 1 })
+    .onConflictDoNothing()
+    .returning({ key: rateLimitHits.key });
+  return rows.length === 1;
 }
 
 /** Delete counters from finished windows (run daily). */
