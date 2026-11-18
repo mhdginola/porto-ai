@@ -36,6 +36,11 @@ import {
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { CompanyTemplate, TemplateIcon } from "@/content/company-templates";
+import { ContactForm, FaqAccordion, TestimonialCarousel } from "@/components/company-templates/interactive/Engagement";
+import { CountUp, Reveal } from "@/components/company-templates/interactive/Motion";
+import { MobileMenu, SpyNav, type NavLink } from "@/components/company-templates/interactive/Navigation";
+import { TemplateShell } from "@/components/company-templates/interactive/TemplateShell";
+import { TemplateWidgetView } from "@/components/company-templates/interactive/Widgets";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<TemplateIcon, LucideIcon> = {
@@ -67,11 +72,16 @@ const ICONS: Record<TemplateIcon, LucideIcon> = {
 function sectionFor(label: string): string {
   const l = label.toLowerCase();
   if (/beranda|home/.test(l)) return "#top";
+  if (/konsultasi|janji|estimasi|pesan|ongkir|cari program/.test(l)) return "#tools";
   if (/layanan|menu|program|service/.test(l)) return "#services";
   if (/tentang|cerita|about|story/.test(l)) return "#about";
   if (/tim|dokter|mentor|team/.test(l)) return "#team";
   if (/proses|process/.test(l)) return "#process";
   return "#contact";
+}
+
+function navLinks(t: CompanyTemplate): NavLink[] {
+  return t.nav.map((label) => ({ label, href: sectionFor(label) }));
 }
 
 function initials(name: string) {
@@ -101,9 +111,11 @@ export function TemplateSite({ template }: { template: CompanyTemplate }) {
         template.theme.dark ? "bg-neutral-950 text-neutral-100" : "bg-white text-slate-900"
       )}
     >
-      {template.layout === "corporate" && <CorporateLayout t={template} font={font} />}
-      {template.layout === "bold" && <BoldLayout t={template} font={font} />}
-      {template.layout === "minimal" && <MinimalLayout t={template} font={font} />}
+      <TemplateShell companyName={template.company.name} whatsapp={template.whatsapp} dark={template.theme.dark}>
+        {template.layout === "corporate" && <CorporateLayout t={template} font={font} />}
+        {template.layout === "bold" && <BoldLayout t={template} font={font} />}
+        {template.layout === "minimal" && <MinimalLayout t={template} font={font} />}
+      </TemplateShell>
       <p
         className={cn(
           "py-3 text-center text-[11px]",
@@ -146,11 +158,13 @@ function CorporateLayout({ t, font }: LayoutProps) {
               <span className="block text-[11px] uppercase tracking-wider text-slate-500">{t.company.tagline}</span>
             </span>
           </a>
-          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
-            {t.nav.map((n) => (
-              <a key={n} href={sectionFor(n)} className="hover:text-[var(--tp)]">{n}</a>
-            ))}
-          </nav>
+          <SpyNav
+            links={navLinks(t)}
+            className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex"
+            linkClass="border-b-2 border-transparent py-1 hover:text-[var(--tp)]"
+            activeClass="border-[var(--ta)] text-[var(--tp)]"
+          />
+          <MobileMenu links={navLinks(t)} dark={false} />
           <a href="#contact" className="hidden whitespace-nowrap rounded-md bg-[var(--ta)] px-4 py-2 text-sm font-semibold text-slate-900 hover:opacity-90 sm:inline-block">
             {t.hero.cta}
           </a>
@@ -176,7 +190,7 @@ function CorporateLayout({ t, font }: LayoutProps) {
             <div className="grid grid-cols-2 gap-6">
               {t.stats.map((s) => (
                 <div key={s.label}>
-                  <p className={cn("text-3xl font-bold text-[var(--ta)]", font)}>{s.value}</p>
+                  <p className={cn("text-3xl font-bold text-[var(--ta)]", font)}><CountUp value={s.value} /></p>
                   <p className="mt-1 text-sm text-white/75">{s.label}</p>
                 </div>
               ))}
@@ -193,22 +207,26 @@ function CorporateLayout({ t, font }: LayoutProps) {
       <section id="services" className="mx-auto max-w-6xl px-6 py-20">
         <SectionHeading eyebrow="Layanan" title="Apa yang kami kerjakan" font={font} className="text-[var(--tp)]" />
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {t.services.map((s) => {
+          {t.services.map((s, i) => {
             const Icon = ICONS[s.icon];
             return (
-              <div key={s.title} className="group rounded-xl border border-slate-200 p-6 transition-shadow hover:shadow-lg">
+              <Reveal key={s.title} delay={(i % 3) * 100}>
+              <div className="group h-full rounded-xl border border-slate-200 p-6 transition-all hover:-translate-y-1 hover:shadow-lg">
                 <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--tp)]/10 text-[var(--tp)] group-hover:bg-[var(--tp)] group-hover:text-white">
                   <Icon className="h-5 w-5" />
                 </span>
                 <h3 className={cn("mt-4 text-lg font-bold", font)}>{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">{s.description}</p>
               </div>
+              </Reveal>
             );
           })}
         </div>
       </section>
 
-      <section id="about" className="bg-slate-50">
+      <ToolsSection t={t} font={font} headingClass="text-[var(--tp)]" sectionClass="bg-slate-50" />
+
+      <section id="about">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-2">
           <PatternPanel className="aspect-[4/3] rounded-2xl" label={t.company.name} font={font} />
           <div>
@@ -261,6 +279,8 @@ function CorporateLayout({ t, font }: LayoutProps) {
         </div>
       </section>
 
+      <FaqSection t={t} font={font} headingClass="text-[var(--tp)]" />
+
       <section className="bg-[var(--tp)] text-white">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-14 md:flex-row md:items-center">
           <div>
@@ -271,7 +291,16 @@ function CorporateLayout({ t, font }: LayoutProps) {
         </div>
       </section>
 
-      <footer id="contact" className="bg-slate-900 text-slate-300">
+      <section id="contact" className="mx-auto grid max-w-6xl gap-10 px-6 py-20 md:grid-cols-2">
+        <div>
+          <SectionHeading eyebrow="Kontak" title="Kirim pesan kepada kami" font={font} className="text-[var(--tp)]" align="left" />
+          <p className="mt-4 text-slate-600">{t.cta.subtitle}</p>
+          <div className="mt-8 rounded-2xl bg-slate-900 p-6"><ContactList t={t} /></div>
+        </div>
+        <ContactForm companyName={t.company.name} dark={false} button="Kirim Pesan" />
+      </section>
+
+      <footer className="bg-slate-900 text-slate-300">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 md:grid-cols-3">
           <div>
             <p className={cn("text-lg font-bold text-white", font)}>{t.company.name}</p>
@@ -303,14 +332,18 @@ function BoldLayout({ t, font }: LayoutProps) {
             {t.company.name}
             <span className="text-[var(--tp)]">.</span>
           </a>
-          <nav className="hidden items-center gap-8 text-sm font-semibold uppercase tracking-wide text-neutral-300 md:flex">
-            {t.nav.map((n) => (
-              <a key={n} href={sectionFor(n)} className="hover:text-[var(--tp)]">{n}</a>
-            ))}
-          </nav>
-          <a href="#contact" className="whitespace-nowrap rounded-full border-2 border-[var(--tp)] px-4 py-2 text-sm font-bold text-[var(--tp)] hover:bg-[var(--tp)] hover:text-neutral-950 sm:px-5">
-            {t.hero.cta}
-          </a>
+          <SpyNav
+            links={navLinks(t)}
+            className="hidden items-center gap-8 text-sm font-semibold uppercase tracking-wide text-neutral-300 md:flex"
+            linkClass="hover:text-[var(--tp)]"
+            activeClass="text-[var(--tp)]"
+          />
+          <div className="flex items-center gap-2">
+            <a href="#contact" className="hidden whitespace-nowrap rounded-full border-2 border-[var(--tp)] px-4 py-2 text-sm font-bold text-[var(--tp)] hover:bg-[var(--tp)] hover:text-neutral-950 sm:inline-block sm:px-5">
+              {t.hero.cta}
+            </a>
+            <MobileMenu links={navLinks(t)} dark />
+          </div>
         </div>
       </header>
 
@@ -351,7 +384,7 @@ function BoldLayout({ t, font }: LayoutProps) {
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-neutral-800 px-6 md:grid-cols-4">
           {t.stats.map((s) => (
             <div key={s.label} className="px-4 py-10 first:pl-0">
-              <p className={cn("text-4xl font-black text-[var(--tp)] md:text-5xl", font)}>{s.value}</p>
+              <p className={cn("text-4xl font-black text-[var(--tp)] md:text-5xl", font)}><CountUp value={s.value} /></p>
               <p className="mt-2 text-sm uppercase tracking-wide text-neutral-400">{s.label}</p>
             </div>
           ))}
@@ -364,7 +397,8 @@ function BoldLayout({ t, font }: LayoutProps) {
           {t.services.map((s, i) => {
             const Icon = ICONS[s.icon];
             return (
-              <div key={s.title} className="group grid items-center gap-4 py-8 md:grid-cols-[80px_1fr_1.2fr_40px]">
+              <Reveal key={s.title} delay={i * 80}>
+              <div className="group grid items-center gap-4 py-8 md:grid-cols-[80px_1fr_1.2fr_40px]">
                 <span className={cn("text-2xl font-black text-neutral-600 group-hover:text-[var(--tp)]", font)}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -372,10 +406,13 @@ function BoldLayout({ t, font }: LayoutProps) {
                 <p className="text-neutral-400">{s.description}</p>
                 <Icon className="hidden h-7 w-7 text-neutral-600 group-hover:text-[var(--tp)] md:block" />
               </div>
+              </Reveal>
             );
           })}
         </div>
       </section>
+
+      <ToolsSection t={t} font={font} headingClass="" sectionClass="border-t border-neutral-800" />
 
       <section id="about" className="bg-[var(--tp)] text-neutral-950">
         <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 md:grid-cols-2">
@@ -406,14 +443,12 @@ function BoldLayout({ t, font }: LayoutProps) {
             </div>
           ))}
         </div>
-        <blockquote className="mx-auto mt-24 max-w-3xl text-center">
-          <Quote className="mx-auto h-10 w-10 text-[var(--tp)]" />
-          <p className={cn("mt-6 text-2xl font-bold leading-snug md:text-3xl", font)}>“{t.testimonials[0].quote}”</p>
-          <footer className="mt-6 text-sm uppercase tracking-wide text-neutral-400">
-            {t.testimonials[0].name} · {t.testimonials[0].role}
-          </footer>
-        </blockquote>
+        <div className={cn("mt-24", font)}>
+          <TestimonialCarousel items={t.testimonials} dark large />
+        </div>
       </section>
+
+      <FaqSection t={t} font={font} headingClass="" />
 
       <section id="contact" className="border-t border-neutral-800 bg-neutral-900">
         <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 md:grid-cols-2">
@@ -422,22 +457,7 @@ function BoldLayout({ t, font }: LayoutProps) {
             <p className="mt-4 text-neutral-400">{t.cta.subtitle}</p>
             <div className="mt-8"><ContactList t={t} dark /></div>
           </div>
-          <form className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-950 p-8" action="#">
-            {["Nama", "Email / WhatsApp", "Perusahaan"].map((f) => (
-              <label key={f} className="block">
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">{f}</span>
-                <input disabled className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm" placeholder={f} />
-              </label>
-            ))}
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Pesan</span>
-              <textarea disabled rows={4} className="mt-1.5 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm" />
-            </label>
-            <button type="button" disabled className="w-full rounded-full bg-[var(--tp)] py-3.5 font-bold text-neutral-950 opacity-90">
-              {t.cta.button}
-            </button>
-            <p className="text-center text-[11px] text-neutral-500">Form demo — tidak mengirim data.</p>
-          </form>
+          <ContactForm companyName={t.company.name} dark button={t.cta.button} />
         </div>
       </section>
     </>
@@ -457,12 +477,14 @@ function MinimalLayout({ t, font }: LayoutProps) {
               {t.company.name} <span className="hidden font-normal text-slate-400 sm:inline">{t.company.tagline}</span>
             </span>
           </a>
-          <nav className="hidden items-center gap-6 text-sm text-slate-500 md:flex">
-            {t.nav.map((n) => (
-              <a key={n} href={sectionFor(n)} className="hover:text-slate-900">{n}</a>
-            ))}
-          </nav>
-          <a href="#contact" className="whitespace-nowrap rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-[var(--tp)]">
+          <SpyNav
+            links={navLinks(t)}
+            className="hidden items-center gap-1 text-sm text-slate-500 md:flex"
+            linkClass="rounded-full px-3 py-1.5 hover:text-slate-900"
+            activeClass="bg-[var(--tp)]/10 text-[var(--tp)]"
+          />
+          <MobileMenu links={navLinks(t)} dark={false} />
+          <a href="#contact" className="hidden whitespace-nowrap rounded-full bg-slate-900 sm:inline-block px-4 py-2 text-sm font-medium text-white hover:bg-[var(--tp)]">
             {t.hero.cta}
           </a>
         </div>
@@ -485,7 +507,7 @@ function MinimalLayout({ t, font }: LayoutProps) {
           <div className="mx-auto mt-14 grid max-w-xl grid-cols-3 gap-6">
             {t.stats.map((s) => (
               <div key={s.label}>
-                <p className={cn("text-3xl font-semibold text-[var(--tp)]", font)}>{s.value}</p>
+                <p className={cn("text-3xl font-semibold text-[var(--tp)]", font)}><CountUp value={s.value} /></p>
                 <p className="mt-1 text-xs text-slate-500">{s.label}</p>
               </div>
             ))}
@@ -496,10 +518,11 @@ function MinimalLayout({ t, font }: LayoutProps) {
       <section id="services" className="mx-auto max-w-5xl px-6 py-20">
         <SectionHeading eyebrow="Layanan" title="Yang bisa kami bantu" font={font} align="left" />
         <div className="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
-          {t.services.map((s) => {
+          {t.services.map((s, i) => {
             const Icon = ICONS[s.icon];
             return (
-              <div key={s.title} className="flex gap-4">
+              <Reveal key={s.title} delay={(i % 2) * 100}>
+              <div className="flex gap-4">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--tp)]/10 text-[var(--tp)]">
                   <Icon className="h-5 w-5" />
                 </span>
@@ -508,10 +531,13 @@ function MinimalLayout({ t, font }: LayoutProps) {
                   <p className="mt-1 text-sm leading-relaxed text-slate-500">{s.description}</p>
                 </div>
               </div>
+              </Reveal>
             );
           })}
         </div>
       </section>
+
+      <ToolsSection t={t} font={font} headingClass="" sectionClass="" narrow />
 
       <section id="about" className="mx-auto max-w-5xl px-6 py-10">
         <div className="grid items-center gap-10 rounded-3xl bg-slate-50 p-8 md:grid-cols-2 md:p-12">
@@ -552,12 +578,12 @@ function MinimalLayout({ t, font }: LayoutProps) {
             </div>
           ))}
         </div>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {t.testimonials.map((q) => (
-            <TestimonialCard key={q.name} q={q} />
-          ))}
+        <div className="mt-16 rounded-3xl bg-slate-50 px-6 py-12">
+          <TestimonialCarousel items={t.testimonials} dark={false} />
         </div>
       </section>
+
+      <FaqSection t={t} font={font} headingClass="" narrow />
 
       <section id="contact" className="mx-auto max-w-5xl px-6 pb-24">
         <div className="rounded-3xl bg-[var(--tp)] p-8 text-white md:p-12">
@@ -576,9 +602,9 @@ function MinimalLayout({ t, font }: LayoutProps) {
               </div>
             ))}
           </div>
-          <a href="#contact" className="mt-8 inline-block rounded-full bg-white px-6 py-3 font-medium text-[var(--tp)]">
-            {t.cta.button}
-          </a>
+        </div>
+        <div className="mt-6">
+          <ContactForm companyName={t.company.name} dark={false} button={t.cta.button} />
         </div>
       </section>
     </>
@@ -586,6 +612,40 @@ function MinimalLayout({ t, font }: LayoutProps) {
 }
 
 /* ======================= shared bits ======================= */
+
+/** Industry-specific interactive tool (booking, estimator, menu, shipping, quiz). */
+function ToolsSection({
+  t,
+  font,
+  headingClass,
+  sectionClass,
+  narrow,
+}: LayoutProps & { headingClass: string; sectionClass?: string; narrow?: boolean }) {
+  return (
+    <section id="tools" className={sectionClass}>
+      <div className={cn("mx-auto px-6 py-20", narrow ? "max-w-5xl" : "max-w-6xl")}>
+        <Reveal>
+          <SectionHeading eyebrow="Online" title={t.widget.title} font={font} className={headingClass} align={narrow ? "left" : "center"} />
+          <p className={cn("mt-3 max-w-2xl opacity-70", !narrow && "mx-auto text-center")}>{t.widget.subtitle}</p>
+        </Reveal>
+        <div className="mt-10">
+          <TemplateWidgetView template={t} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FaqSection({ t, font, headingClass, narrow }: LayoutProps & { headingClass: string; narrow?: boolean }) {
+  return (
+    <section id="faq" className={cn("mx-auto px-6 py-20", narrow ? "max-w-5xl" : "max-w-3xl")}>
+      <SectionHeading eyebrow="FAQ" title="Pertanyaan yang sering diajukan" font={font} className={headingClass} align={narrow ? "left" : "center"} />
+      <div className="mt-10">
+        <FaqAccordion items={t.faq} dark={t.theme.dark} />
+      </div>
+    </section>
+  );
+}
 
 function SectionHeading({
   eyebrow,

@@ -314,6 +314,14 @@ Menu **Templates** (`/templates`) — katalog template website company profile u
   (bisa dibagikan: `?device=mobile`). `/templates/<slug>/view` — template saja (`noindex`),
   dipakai iframe; thumbnail katalog adalah iframe ini yang diperkecil.
 - "Gunakan template ini" → `/contact?template=<slug>`: pesan di form kontak terisi otomatis.
+- Fitur interaktif (client island di `src/components/company-templates/interactive/`):
+  menu mobile, navigasi yang menandai section aktif, animasi reveal & angka count-up,
+  slider testimoni, FAQ accordion, form kontak dengan validasi, tombol WhatsApp mengambang,
+  back-to-top, dan satu widget per industri (`widget` di data template): booking konsultasi /
+  dokter, kalkulator biaya bangun, menu + keranjang pesanan, cek ongkir, kuis cari program.
+- Semua aksi berakhir di **preview pesan WhatsApp** — demo tidak pernah membuka `wa.me`
+  karena nomor di template fiktif (bisa jadi milik orang sungguhan). Untuk situs klien,
+  ganti preview dengan link `https://wa.me/<nomor>?text=<pesan>`.
 
 ## Smart contact form
 

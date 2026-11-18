@@ -134,3 +134,20 @@ body {
   background: color-mix(in oklab, var(--primary) 35%, transparent);
   color: var(--foreground);
 }
+
+/* Company-profile templates: content swap in carousels / quiz steps. */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[fadeIn"] {
+    animation: none !important;
+  }
+}

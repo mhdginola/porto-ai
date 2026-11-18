@@ -33,6 +33,42 @@ export type TemplateIcon =
   | "award"
   | "chart";
 
+/** One interactive, industry-specific tool per template. */
+export type TemplateWidget = { title: string; subtitle: string } & (
+  | {
+      type: "booking";
+      topicLabel: string;
+      topics: string[];
+      personLabel: string;
+      slots: string[];
+      /** 0 = Sunday … 6 = Saturday */
+      closedDays: number[];
+      daysAhead: number;
+    }
+  | {
+      type: "estimator";
+      buildingTypes: { label: string; pricePerM2: [number, number] }[];
+      finishes: { label: string; multiplier: number }[];
+      area: { min: number; max: number; default: number };
+      floorsMax: number;
+    }
+  | {
+      type: "menu";
+      categories: { name: string; items: { name: string; price: number; description: string; tag?: string }[] }[];
+    }
+  | {
+      type: "shipping";
+      /** Cities with a zone number; price grows with zone distance. */
+      cities: { name: string; zone: number }[];
+      services: { name: string; perKg: number; base: number; etaDays: [number, number] }[];
+    }
+  | {
+      type: "quiz";
+      questions: { question: string; options: { label: string; scores: Record<string, number> }[] }[];
+      results: Record<string, { name: string; description: string; duration: string; price: number }>;
+    }
+);
+
 export type CompanyTemplate = {
   slug: string;
   name: string;
@@ -59,6 +95,10 @@ export type CompanyTemplate = {
   team: { name: string; role: string }[];
   cta: { title: string; subtitle: string; button: string };
   contact: { address: string; phone: string; email: string; hours: string };
+  /** Shown in the WhatsApp preview (fictional — the demo never opens wa.me). */
+  whatsapp: string;
+  faq: { q: string; a: string }[];
+  widget: TemplateWidget;
 };
 
 export const companyTemplates: CompanyTemplate[] = [
@@ -72,13 +112,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "corporate",
     highlights: [
+      { en: "Consultation booking", id: "Booking konsultasi" },
       { en: "Practice areas", id: "Bidang praktik" },
       { en: "Consultation flow", id: "Alur konsultasi" },
       { en: "Partner profiles", id: "Profil partner" },
     ],
     theme: { primary: "#1e3a5f", accent: "#c9a227", dark: false, font: "serif" },
     company: { name: "Aksara Legal", tagline: "Advokat & Konsultan Hukum" },
-    nav: ["Beranda", "Layanan", "Tentang", "Tim", "Kontak"],
+    nav: ["Beranda", "Layanan", "Konsultasi", "Tim", "Kontak"],
     hero: {
       eyebrow: "Sejak 2009 · Jakarta",
       title: "Pendampingan hukum yang jernih untuk keputusan bisnis yang tepat",
@@ -136,6 +177,24 @@ export const companyTemplates: CompanyTemplate[] = [
       email: "halo@aksaralegal.co.id",
       hours: "Senin–Jumat, 08.00–17.00",
     },
+    whatsapp: "0812-5550-0123",
+    faq: [
+      { q: "Apakah konsultasi awal benar-benar gratis?", a: "Ya. Konsultasi awal 30 menit tidak dikenakan biaya dan tidak mengikat. Setelahnya kami kirimkan proposal tertulis beserta estimasi biaya." },
+      { q: "Bagaimana sistem biayanya?", a: "Tersedia biaya per jam, biaya tetap per pekerjaan, atau retainer bulanan. Semua disepakati tertulis sebelum pekerjaan dimulai." },
+      { q: "Apakah bisa konsultasi online?", a: "Bisa, lewat video call. Dokumen dapat dikirim melalui email terenkripsi." },
+      { q: "Berapa lama proses pendirian PT?", a: "Umumnya 7–14 hari kerja sejak dokumen lengkap, termasuk akta, SK Kemenkumham, dan NIB." },
+    ],
+    widget: {
+      type: "booking",
+      title: "Jadwalkan konsultasi",
+      subtitle: "Pilih topik, partner, dan waktu yang cocok — konfirmasi dikirim lewat WhatsApp.",
+      topicLabel: "Topik",
+      topics: ["Hukum Korporasi", "Penyelesaian Sengketa", "Kepatuhan & Regulasi", "Kontrak & Perjanjian", "Ketenagakerjaan", "Kekayaan Intelektual"],
+      personLabel: "Partner",
+      slots: ["09.00", "10.30", "13.00", "14.30", "16.00"],
+      closedDays: [0, 6],
+      daysAhead: 10,
+    },
   },
   {
     slug: "bangun-prima",
@@ -147,13 +206,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "bold",
     highlights: [
+      { en: "Cost estimator", id: "Kalkulator biaya" },
       { en: "Big-number stats", id: "Statistik angka besar" },
       { en: "Numbered services", id: "Layanan bernomor" },
       { en: "Quote request form", id: "Form minta penawaran" },
     ],
     theme: { primary: "#f97316", accent: "#facc15", dark: true, font: "sans" },
     company: { name: "Bangun Prima", tagline: "General Contractor" },
-    nav: ["Beranda", "Layanan", "Tentang", "Proses", "Kontak"],
+    nav: ["Beranda", "Layanan", "Estimasi", "Proses", "Kontak"],
     hero: {
       eyebrow: "Kontraktor bersertifikat · Kualifikasi B1",
       title: "Membangun tepat waktu. Tepat anggaran.",
@@ -205,6 +265,31 @@ export const companyTemplates: CompanyTemplate[] = [
       email: "proyek@bangunprima.co.id",
       hours: "Senin–Sabtu, 07.30–16.30",
     },
+    whatsapp: "0812-0000-1234",
+    faq: [
+      { q: "Apakah survei lokasi berbayar?", a: "Gratis untuk area Jabodetabek. Di luar itu, biaya transportasi survei dipotong dari nilai kontrak jika proyek berjalan." },
+      { q: "Berapa lama RAB bisa diterima?", a: "RAB terperinci kami kirim dalam 7 hari kerja setelah survei dan gambar kerja tersedia." },
+      { q: "Bagaimana termin pembayarannya?", a: "Umumnya DP 20%, lalu termin berdasarkan progres fisik yang diverifikasi bersama, dan retensi 5% selama masa pemeliharaan." },
+      { q: "Apakah bisa membantu pengurusan PBG?", a: "Bisa. Kami menyiapkan gambar dan dokumen teknis sekaligus mendampingi proses pengajuannya." },
+    ],
+    widget: {
+      type: "estimator",
+      title: "Estimasi biaya bangun",
+      subtitle: "Perkiraan kasar untuk perencanaan awal. Angka final ditentukan setelah survei dan RAB.",
+      buildingTypes: [
+        { label: "Gudang (struktur baja)", pricePerM2: [2_800_000, 3_600_000] },
+        { label: "Ruko / rumah toko", pricePerM2: [3_800_000, 5_000_000] },
+        { label: "Kantor", pricePerM2: [4_500_000, 6_500_000] },
+        { label: "Renovasi interior", pricePerM2: [1_500_000, 2_800_000] },
+      ],
+      finishes: [
+        { label: "Standar", multiplier: 1 },
+        { label: "Menengah", multiplier: 1.2 },
+        { label: "Premium", multiplier: 1.45 },
+      ],
+      area: { min: 50, max: 10000, default: 400 },
+      floorsMax: 5,
+    },
   },
   {
     slug: "klinik-sehat-sentosa",
@@ -216,13 +301,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "minimal",
     highlights: [
+      { en: "Doctor appointments", id: "Booking dokter" },
       { en: "Doctor profiles", id: "Profil dokter" },
       { en: "Opening hours", id: "Jam praktik" },
       { en: "Appointment CTA", id: "Tombol buat janji" },
     ],
     theme: { primary: "#0f766e", accent: "#5eead4", dark: false, font: "sans" },
     company: { name: "Sehat Sentosa", tagline: "Klinik Pratama & Gigi" },
-    nav: ["Beranda", "Layanan", "Dokter", "Kontak"],
+    nav: ["Beranda", "Layanan", "Buat Janji", "Dokter", "Kontak"],
     hero: {
       eyebrow: "Buka setiap hari · BPJS & asuransi",
       title: "Perawatan yang tenang, untuk seluruh keluarga",
@@ -273,6 +359,23 @@ export const companyTemplates: CompanyTemplate[] = [
       email: "info@kliniksentosa.id",
       hours: "Setiap hari, 07.00–21.00",
     },
+    whatsapp: "0811-2200-3300",
+    faq: [
+      { q: "Apakah melayani pasien BPJS?", a: "Ya, untuk peserta yang terdaftar di klinik kami sebagai faskes tingkat pertama. Kami juga menerima lebih dari 20 asuransi swasta." },
+      { q: "Perlu daftar dulu atau bisa langsung datang?", a: "Bisa langsung datang, tapi pasien yang daftar online didahulukan sesuai jam yang dipilih." },
+      { q: "Apakah ada layanan di hari Minggu?", a: "Ada. Dokter umum praktik setiap hari; jadwal dokter gigi dan dokter anak bisa dilihat saat membuat janji." },
+    ],
+    widget: {
+      type: "booking",
+      title: "Buat janji temu",
+      subtitle: "Pilih layanan, dokter, dan jam kedatangan. Nomor antrean dikirim lewat WhatsApp.",
+      topicLabel: "Layanan",
+      topics: ["Dokter Umum", "Dokter Gigi", "Kesehatan Ibu & Anak", "Cek Kesehatan"],
+      personLabel: "Dokter",
+      slots: ["08.00", "09.30", "11.00", "13.30", "15.00", "16.30", "19.00"],
+      closedDays: [],
+      daysAhead: 7,
+    },
   },
   {
     slug: "kopi-ruang-temu",
@@ -284,13 +387,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "bold",
     highlights: [
+      { en: "Online ordering", id: "Pesan online" },
       { en: "Menu highlights", id: "Menu andalan" },
       { en: "Brand story", id: "Cerita brand" },
       { en: "Reservations", id: "Reservasi" },
     ],
     theme: { primary: "#b45309", accent: "#fde68a", dark: true, font: "serif" },
     company: { name: "Ruang Temu", tagline: "Kopi & Dapur" },
-    nav: ["Beranda", "Menu", "Cerita", "Lokasi"],
+    nav: ["Beranda", "Menu", "Pesan Online", "Cerita", "Lokasi"],
     hero: {
       eyebrow: "Roastery sendiri · Yogyakarta",
       title: "Kopi lokal, meja panjang, obrolan tanpa terburu-buru.",
@@ -339,6 +443,43 @@ export const companyTemplates: CompanyTemplate[] = [
       email: "halo@ruangtemu.coffee",
       hours: "Setiap hari, 08.00–23.00",
     },
+    whatsapp: "0813-9000-7788",
+    faq: [
+      { q: "Apakah bisa pesan untuk diambil (take away)?", a: "Bisa. Pesan lewat tombol di bagian Pesan Online, lalu ambil di cabang pilihan Anda dalam 15 menit." },
+      { q: "Apakah menerima pesanan untuk acara kantor?", a: "Ya, untuk minimal 20 porsi. Hubungi kami H-2 agar biji kopi bisa disiapkan." },
+      { q: "Apakah biji kopinya dijual?", a: "Ya, dalam kemasan 200 gram dan 1 kg, digiling sesuai alat seduh Anda." },
+    ],
+    widget: {
+      type: "menu",
+      title: "Pesan online",
+      subtitle: "Pilih menu, atur jumlah, lalu kirim pesanan lewat WhatsApp untuk diambil di cabang.",
+      categories: [
+        {
+          name: "Kopi",
+          items: [
+            { name: "Kopi Susu Gula Aren", price: 24000, description: "Espresso blend rumah, susu segar, gula aren.", tag: "Favorit" },
+            { name: "Americano", price: 22000, description: "Double shot espresso dengan air panas." },
+            { name: "V60 Single Origin", price: 30000, description: "Pilihan origin harian: Temanggung, Kintamani, Gayo." },
+            { name: "Es Kopi Pandan", price: 27000, description: "Kopi susu dengan sirup pandan buatan sendiri.", tag: "Baru" },
+          ],
+        },
+        {
+          name: "Non-kopi",
+          items: [
+            { name: "Cokelat Rempah", price: 26000, description: "Cokelat hitam dengan kayu manis dan cengkeh." },
+            { name: "Teh Telang Lemon", price: 20000, description: "Teh bunga telang dengan perasan lemon." },
+          ],
+        },
+        {
+          name: "Makanan",
+          items: [
+            { name: "Nasi Ayam Sambal Matah", price: 38000, description: "Ayam bakar, sambal matah, nasi hangat.", tag: "Favorit" },
+            { name: "Roti Bakar Srikaya", price: 22000, description: "Roti sourdough dengan srikaya pandan." },
+            { name: "Pisang Goreng Keju", price: 20000, description: "Pisang kepok, keju, dan susu kental manis." },
+          ],
+        },
+      ],
+    },
   },
   {
     slug: "nusantara-logistik",
@@ -350,13 +491,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "corporate",
     highlights: [
+      { en: "Shipping calculator", id: "Cek ongkir" },
       { en: "Service tiers", id: "Pilihan layanan" },
       { en: "Coverage stats", id: "Statistik jangkauan" },
       { en: "B2B process", id: "Proses B2B" },
     ],
     theme: { primary: "#1d4ed8", accent: "#22d3ee", dark: false, font: "sans" },
     company: { name: "Nusantara Logistik", tagline: "Freight & Fulfillment" },
-    nav: ["Beranda", "Layanan", "Tentang", "Proses", "Kontak"],
+    nav: ["Beranda", "Layanan", "Cek Ongkir", "Tentang", "Kontak"],
     hero: {
       eyebrow: "Kirim ke 514 kota/kabupaten",
       title: "Logistik B2B yang bisa Anda pantau setiap jamnya",
@@ -410,6 +552,33 @@ export const companyTemplates: CompanyTemplate[] = [
       email: "sales@nusantaralogistik.co.id",
       hours: "Senin–Sabtu, 08.00–18.00",
     },
+    whatsapp: "0812-1500-1230",
+    faq: [
+      { q: "Apakah ada minimum berat pengiriman?", a: "Untuk layanan Reguler dan Express tidak ada minimum. Kargo minimum 10 kg per pengiriman." },
+      { q: "Bagaimana jika barang rusak atau hilang?", a: "Setiap kiriman dilindungi asuransi dasar; untuk barang bernilai tinggi tersedia asuransi tambahan hingga Rp500 juta." },
+      { q: "Apakah bisa pickup dari gudang saya?", a: "Bisa, gratis untuk klien korporat dengan jadwal rutin, dan on-demand di 12 kota besar." },
+    ],
+    widget: {
+      type: "shipping",
+      title: "Cek ongkos kirim",
+      subtitle: "Estimasi tarif dan waktu tempuh. Tarif korporat bisa lebih rendah sesuai volume.",
+      cities: [
+        { name: "Jakarta", zone: 0 },
+        { name: "Bandung", zone: 0 },
+        { name: "Semarang", zone: 1 },
+        { name: "Surabaya", zone: 1 },
+        { name: "Denpasar", zone: 2 },
+        { name: "Medan", zone: 2 },
+        { name: "Makassar", zone: 3 },
+        { name: "Balikpapan", zone: 3 },
+        { name: "Jayapura", zone: 5 },
+      ],
+      services: [
+        { name: "Reguler", base: 9000, perKg: 7000, etaDays: [2, 4] },
+        { name: "Express", base: 15000, perKg: 12000, etaDays: [1, 2] },
+        { name: "Kargo (min. 10 kg)", base: 50000, perKg: 4500, etaDays: [4, 8] },
+      ],
+    },
   },
   {
     slug: "cendekia-academy",
@@ -421,13 +590,14 @@ export const companyTemplates: CompanyTemplate[] = [
     },
     layout: "minimal",
     highlights: [
+      { en: "Program finder quiz", id: "Kuis cari program" },
       { en: "Program catalog", id: "Katalog program" },
       { en: "Mentor profiles", id: "Profil mentor" },
       { en: "Enrollment steps", id: "Langkah pendaftaran" },
     ],
     theme: { primary: "#6d28d9", accent: "#f0abfc", dark: false, font: "sans" },
     company: { name: "Cendekia", tagline: "Academy" },
-    nav: ["Beranda", "Program", "Mentor", "Kontak"],
+    nav: ["Beranda", "Program", "Cari Program", "Mentor", "Kontak"],
     hero: {
       eyebrow: "Pendaftaran gelombang 3 dibuka",
       title: "Belajar skill digital bersama mentor praktisi",
@@ -477,6 +647,51 @@ export const companyTemplates: CompanyTemplate[] = [
       phone: "0821-3300-4455",
       email: "halo@cendekia.academy",
       hours: "Senin–Jumat, 09.00–20.00",
+    },
+    whatsapp: "0821-3300-4455",
+    faq: [
+      { q: "Apakah pemula tanpa latar belakang IT bisa ikut?", a: "Bisa. Semua program dimulai dari dasar, dan tes penempatan membantu menyesuaikan kelas." },
+      { q: "Apakah tersedia cicilan?", a: "Ya, cicilan 0% hingga 6 bulan melalui mitra pembayaran kami." },
+      { q: "Apakah mendapat sertifikat?", a: "Ya, sertifikat kelulusan diberikan setelah menyelesaikan proyek akhir dan minimal 80% kehadiran." },
+    ],
+    widget: {
+      type: "quiz",
+      title: "Program mana yang cocok untuk Anda?",
+      subtitle: "Jawab tiga pertanyaan singkat — kami rekomendasikan program yang paling pas.",
+      questions: [
+        {
+          question: "Kegiatan apa yang paling Anda nikmati?",
+          options: [
+            { label: "Membuat sesuatu yang bisa dipakai orang", scores: { web: 2, uiux: 1 } },
+            { label: "Mencari pola dari angka dan data", scores: { data: 2 } },
+            { label: "Mendesain tampilan yang rapi", scores: { uiux: 2 } },
+            { label: "Membuat konten dan kampanye", scores: { marketing: 2 } },
+          ],
+        },
+        {
+          question: "Seperti apa pekerjaan impian Anda?",
+          options: [
+            { label: "Software engineer", scores: { web: 2 } },
+            { label: "Data analyst", scores: { data: 2 } },
+            { label: "Product designer", scores: { uiux: 2 } },
+            { label: "Growth / digital marketer", scores: { marketing: 2 } },
+          ],
+        },
+        {
+          question: "Berapa waktu belajar per minggu?",
+          options: [
+            { label: "Di bawah 6 jam", scores: { marketing: 1, uiux: 1 } },
+            { label: "6–10 jam", scores: { data: 1, uiux: 1 } },
+            { label: "Lebih dari 10 jam", scores: { web: 1, data: 1 } },
+          ],
+        },
+      ],
+      results: {
+        web: { name: "Web Development", description: "HTML, React, dan backend dasar — lulus dengan 3 proyek portofolio.", duration: "12 minggu", price: 7_500_000 },
+        data: { name: "Data Analytics", description: "SQL, spreadsheet lanjutan, dan dashboard untuk keputusan bisnis.", duration: "10 minggu", price: 6_500_000 },
+        uiux: { name: "UI/UX Design", description: "Riset pengguna, wireframe, hingga prototipe interaktif di Figma.", duration: "10 minggu", price: 6_000_000 },
+        marketing: { name: "Digital Marketing", description: "SEO, iklan berbayar, dan strategi konten berbasis data.", duration: "8 minggu", price: 4_500_000 },
+      },
     },
   },
 ];
