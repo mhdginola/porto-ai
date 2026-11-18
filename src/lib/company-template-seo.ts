@@ -98,3 +98,102 @@ export function templateJsonLd(t: CompanyTemplate) {
 export function jsonLdString(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
+
+/* ---------- Catalog & preview pages: the web-design service, not the fictional businesses ---------- */
+
+const person = {
+  "@type": "Person",
+  "@id": `${base}/#person`,
+  name: siteConfig.name,
+  url: base,
+  jobTitle: siteConfig.title,
+  sameAs: [siteConfig.links.github, siteConfig.links.linkedin],
+};
+
+const serviceName = "Jasa pembuatan website company profile";
+
+function breadcrumb(items: { name: string; url: string }[]) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({ "@type": "ListItem", position: i + 1, name: it.name, item: it.url })),
+  };
+}
+
+/** /templates/<slug>: the page offers a website built from this template. */
+export function templatePreviewJsonLd(t: CompanyTemplate) {
+  const url = `${base}/templates/${t.slug}`;
+  const image = `${url}/opengraph-image`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": url,
+        url,
+        name: `${t.name} — template website ${t.industry.id.toLowerCase()}`,
+        description: t.summary.id,
+        inLanguage: "id-ID",
+        primaryImageOfPage: { "@type": "ImageObject", url: image },
+        breadcrumb: breadcrumb([
+          { name: "Beranda", url: `${base}/` },
+          { name: "Template Web", url: `${base}/templates` },
+          { name: t.name, url },
+        ]),
+        mainEntity: { "@id": `${url}#service` },
+      },
+      {
+        "@type": "Service",
+        "@id": `${url}#service`,
+        name: `${serviceName} — template ${t.name}`,
+        serviceType: serviceName,
+        description: `${t.summary.id} Cocok untuk ${t.idealFor.map((x) => x.id.toLowerCase()).join(", ")}.`,
+        image,
+        url,
+        provider: { "@id": person["@id"] },
+        areaServed: { "@type": "Country", name: "Indonesia" },
+        audience: { "@type": "BusinessAudience", audienceType: t.industry.id },
+      },
+      person,
+    ],
+  };
+}
+
+/** /templates: the catalog as an ItemList of template pages. */
+export function templateCatalogJsonLd(templates: CompanyTemplate[]) {
+  const url = `${base}/templates`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": url,
+        url,
+        name: "Template website company profile",
+        inLanguage: "id-ID",
+        breadcrumb: breadcrumb([
+          { name: "Beranda", url: `${base}/` },
+          { name: "Template Web", url },
+        ]),
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: templates.map((t, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: `${base}/templates/${t.slug}`,
+            name: `${t.name} — ${t.industry.id}`,
+          })),
+        },
+      },
+      {
+        "@type": "Service",
+        "@id": `${url}#service`,
+        name: serviceName,
+        serviceType: serviceName,
+        provider: { "@id": person["@id"] },
+        areaServed: { "@type": "Country", name: "Indonesia" },
+        url,
+      },
+      person,
+    ],
+  };
+}

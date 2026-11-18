@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, Monitor, Smartphone, Tablet } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import type { CompanyTemplate } from "@/content/company-templates";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -17,7 +17,7 @@ const DEVICES = [
 type DeviceId = (typeof DEVICES)[number]["id"];
 
 /** Full-screen live preview with a device switcher. */
-export function TemplatePreview({ template }: { template: CompanyTemplate }) {
+export function TemplatePreview({ template, children }: { template: CompanyTemplate; children?: ReactNode }) {
   const { t, locale } = useLocale();
   const loc = locale === "id" ? "id" : "en";
   const [device, setDevice] = useState<DeviceId>("desktop");
@@ -42,11 +42,12 @@ export function TemplatePreview({ template }: { template: CompanyTemplate }) {
   const src = `/templates/${template.slug}/view`;
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-200 dark:bg-neutral-900">
-      <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-foreground/10 bg-background px-3 sm:px-4">
+    <div className="bg-neutral-200 dark:bg-neutral-900">
+      <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-foreground/10 bg-background px-3 sm:px-4">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/templates"
+            aria-label={t("templates.back")}
             className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-sm text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -96,7 +97,7 @@ export function TemplatePreview({ template }: { template: CompanyTemplate }) {
         </div>
       </div>
 
-      <div className="flex flex-1 justify-center overflow-hidden p-0 md:p-4">
+      <div className="flex h-[calc(100svh-3.5rem)] justify-center overflow-hidden p-0 md:p-4">
         <iframe
           key={template.slug}
           src={src}
@@ -108,6 +109,7 @@ export function TemplatePreview({ template }: { template: CompanyTemplate }) {
           style={{ width }}
         />
       </div>
+      {children}
     </div>
   );
 }

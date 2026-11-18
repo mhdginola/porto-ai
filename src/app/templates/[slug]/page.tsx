@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { TemplateDetails } from "@/components/company-templates/TemplateDetails";
 import { TemplatePreview } from "@/components/company-templates/TemplatePreview";
+import { jsonLdString, templatePreviewJsonLd } from "@/lib/company-template-seo";
 import { companyTemplates, getCompanyTemplate } from "@/content/company-templates";
 
 type Params = { slug: string };
@@ -24,5 +26,15 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function TemplatePreviewPage({ params }: { params: Promise<Params> }) {
   const tpl = getCompanyTemplate((await params).slug);
   if (!tpl) notFound();
-  return <TemplatePreview template={tpl} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdString(templatePreviewJsonLd(tpl)) }}
+      />
+      <TemplatePreview template={tpl}>
+        <TemplateDetails template={tpl} />
+      </TemplatePreview>
+    </>
+  );
 }

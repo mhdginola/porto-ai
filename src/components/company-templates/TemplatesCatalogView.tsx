@@ -1,11 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, Eye, LayoutTemplate } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { Container } from "@/components/ui/Container";
-import { ScaledFrame } from "@/components/company-templates/ScaledFrame";
 import { companyTemplates, type TemplateLayout } from "@/content/company-templates";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
@@ -51,13 +51,24 @@ export function TemplatesCatalogView() {
       </div>
 
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((tpl) => (
+        {items.map((tpl, i) => (
           <article
             key={tpl.slug}
             className="group flex flex-col overflow-hidden rounded-2xl border border-foreground/10 bg-foreground/[0.02] transition-shadow hover:shadow-xl"
           >
             <Link href={`/templates/${tpl.slug}`} className="relative block border-b border-foreground/10 bg-white">
-              <ScaledFrame src={`/templates/${tpl.slug}/view`} title={`${tpl.name} preview`} />
+              {/* Static screenshot (scripts/capture-template-thumbs.mjs) instead of a live
+                  iframe: six embedded pages made the catalog slow to load. */}
+              <div className="relative aspect-[16/10] overflow-hidden">
+                <Image
+                  src={`/templates/thumbs/${tpl.slug}.png`}
+                  alt={`${tpl.name} — ${tpl.industry[loc]}`}
+                  fill
+                  sizes="(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw"
+                  priority={i < 3}
+                  className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+              </div>
               <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900">
                   <Eye className="h-4 w-4" /> {t("templates.previewCta")}

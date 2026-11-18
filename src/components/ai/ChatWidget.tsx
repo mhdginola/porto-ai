@@ -185,8 +185,8 @@ export function ChatWidget({ defaultModelRef }: ChatWidgetProps) {
             placeholder={t("chat.placeholder")}
             className="flex-1 rounded-md border border-foreground/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground/30"
           />
-          <Button type="submit" size="icon" disabled={loading || !input.trim()}>
-            <Send className="h-4 w-4" />
+          <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label="Send message">
+            <Send className="h-4 w-4" aria-hidden />
           </Button>
         </form>
       </div>

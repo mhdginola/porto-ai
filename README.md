@@ -312,7 +312,11 @@ Menu **Templates** (`/templates`) — katalog template website company profile u
   warna lewat CSS variable, tidak terpengaruh dark mode portfolio).
 - `/templates/<slug>` — preview penuh dengan toggle Desktop / Tablet / Mobile
   (bisa dibagikan: `?device=mobile`). `/templates/<slug>/view` — template saja (`noindex`),
-  dipakai iframe; thumbnail katalog adalah iframe ini yang diperkecil.
+  dipakai iframe preview.
+- Thumbnail katalog = screenshot statis di `public/templates/thumbs/<slug>.png` (dioptimasi
+  `next/image` → WebP ±15 KB). Setelah mengubah tampilan template atau menambah template baru,
+  jalankan server (`npm run dev` atau `npm run build && npm run start`) lalu
+  `node scripts/capture-template-thumbs.mjs` (env opsional: `BASE_URL`, `CHROME_PATH`).
 - "Gunakan template ini" → `/contact?template=<slug>`: pesan di form kontak terisi otomatis.
 - Fitur interaktif (client island di `src/components/company-templates/interactive/`):
   menu mobile, navigasi yang menandai section aktif, animasi reveal & angka count-up,
@@ -327,6 +331,11 @@ Menu **Templates** (`/templates`) — katalog template website company profile u
   (`LegalService`, `MedicalClinic`, `CafeOrCoffeeShop`, `GeneralContractor`, …) dengan alamat,
   telepon, jam buka, layanan, dan `FAQPage`. Halaman demo tetap `noindex` (perusahaan fiktif);
   untuk situs klien panggil `templateMetadata(tpl, { indexable: true })`.
+- Yang **diindeks** adalah halaman katalog dan halaman preview (`/templates`, `/templates/<slug>`):
+  konten dirender di server (`TemplateDetails.tsx`: isi halaman, fitur interaktif, cocok untuk,
+  yang bisa disesuaikan, aspek teknis, cara pemesanan, template lainnya) plus JSON-LD jujur —
+  `WebPage` + `Service` (jasa pembuatan website oleh saya) + `BreadcrumbList`, dan
+  `CollectionPage` + `ItemList` di katalog. Tanpa rating/ulasan/harga karangan.
   Lighthouse (build produksi, mobile): Performance 100, Accessibility 100, SEO 100 saat
   indexable, Best Practices 96 (hanya 404 script Vercel Analytics di luar Vercel).
 

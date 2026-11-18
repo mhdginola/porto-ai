@@ -77,6 +77,8 @@ export type CompanyTemplate = {
   layout: TemplateLayout;
   /** Catalog tags (sections/features worth pointing out). */
   highlights: L[];
+  /** Kinds of businesses the template suits (shown on the preview page). */
+  idealFor: L[];
   theme: {
     primary: string;
     accent: string;
@@ -129,6 +131,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Practice areas", id: "Bidang praktik" },
       { en: "Consultation flow", id: "Alur konsultasi" },
       { en: "Partner profiles", id: "Profil partner" },
+    ],
+    idealFor: [
+      { en: "Law firms and legal consultants", id: "Firma hukum dan konsultan hukum" },
+      { en: "Notaries, tax and accounting firms", id: "Notaris, konsultan pajak, dan kantor akuntan" },
+      { en: "B2B consultancies that sell expertise", id: "Konsultan B2B yang menjual keahlian" },
     ],
     theme: { primary: "#1e3a5f", accent: "#c9a227", dark: false, font: "serif" },
     company: { name: "Aksara Legal", tagline: "Advokat & Konsultan Hukum" },
@@ -232,6 +239,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Numbered services", id: "Layanan bernomor" },
       { en: "Quote request form", id: "Form minta penawaran" },
     ],
+    idealFor: [
+      { en: "General contractors and builders", id: "Kontraktor umum dan pemborong bangunan" },
+      { en: "Interior, renovation and steel-structure firms", id: "Jasa interior, renovasi, dan konstruksi baja" },
+      { en: "Industrial and engineering services", id: "Jasa teknik dan industri" },
+    ],
     theme: { primary: "#f97316", accent: "#facc15", dark: true, font: "sans" },
     company: { name: "Bangun Prima", tagline: "General Contractor" },
     nav: ["Beranda", "Layanan", "Estimasi", "Proses", "Kontak"],
@@ -334,6 +346,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Opening hours", id: "Jam praktik" },
       { en: "Appointment CTA", id: "Tombol buat janji" },
     ],
+    idealFor: [
+      { en: "Primary-care and dental clinics", id: "Klinik pratama dan klinik gigi" },
+      { en: "Mother & child, physiotherapy and beauty clinics", id: "Klinik ibu & anak, fisioterapi, dan klinik kecantikan" },
+      { en: "Labs, pharmacies and health practices", id: "Laboratorium, apotek, dan praktik kesehatan" },
+    ],
     theme: { primary: "#0f766e", accent: "#5eead4", dark: false, font: "sans" },
     company: { name: "Sehat Sentosa", tagline: "Klinik Pratama & Gigi" },
     nav: ["Beranda", "Layanan", "Buat Janji", "Dokter", "Kontak"],
@@ -426,6 +443,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Menu highlights", id: "Menu andalan" },
       { en: "Brand story", id: "Cerita brand" },
       { en: "Reservations", id: "Reservasi" },
+    ],
+    idealFor: [
+      { en: "Cafés, coffee shops and roasteries", id: "Kafe, coffee shop, dan roastery" },
+      { en: "Restaurants, bakeries and cloud kitchens", id: "Restoran, bakery, dan cloud kitchen" },
+      { en: "Catering and food brands", id: "Katering dan brand makanan" },
     ],
     theme: { primary: "#d97706", accent: "#fde68a", dark: true, font: "serif" },
     company: { name: "Ruang Temu", tagline: "Kopi & Dapur" },
@@ -539,6 +561,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Coverage stats", id: "Statistik jangkauan" },
       { en: "B2B process", id: "Proses B2B" },
     ],
+    idealFor: [
+      { en: "Logistics, freight and courier companies", id: "Perusahaan logistik, kargo, dan kurir" },
+      { en: "Warehousing and fulfillment services", id: "Jasa pergudangan dan fulfillment" },
+      { en: "Other B2B service companies", id: "Perusahaan jasa B2B lainnya" },
+    ],
     theme: { primary: "#1d4ed8", accent: "#22d3ee", dark: false, font: "sans" },
     company: { name: "Nusantara Logistik", tagline: "Freight & Fulfillment" },
     nav: ["Beranda", "Layanan", "Cek Ongkir", "Tentang", "Kontak"],
@@ -644,6 +671,11 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Program catalog", id: "Katalog program" },
       { en: "Mentor profiles", id: "Profil mentor" },
       { en: "Enrollment steps", id: "Langkah pendaftaran" },
+    ],
+    idealFor: [
+      { en: "Course providers and bootcamps", id: "Lembaga kursus dan bootcamp" },
+      { en: "Tutoring centres and private schools", id: "Bimbel dan sekolah swasta" },
+      { en: "Training and certification providers", id: "Lembaga pelatihan dan sertifikasi" },
     ],
     theme: { primary: "#6d28d9", accent: "#f0abfc", dark: false, font: "sans" },
     company: { name: "Cendekia", tagline: "Academy" },
