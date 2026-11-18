@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, LayoutList, MousePointerClick, Palette, Search, Store } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { companyTemplates, type CompanyTemplate } from "@/content/company-templates";
-import { LOCALE_STORAGE_KEY, type Locale } from "@/lib/i18n/types";
+import type { Locale } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
 type L = Record<Locale, string>;
@@ -75,23 +74,11 @@ function sectionsOf(t: CompanyTemplate): L[] {
 }
 
 /**
- * Crawlable description of a template, below the live preview. Rendered in
- * Indonesian by default (the template's market — and what crawlers see); a
- * visitor who explicitly chose English via the language toggle gets English.
+ * Crawlable description of a template, below the live preview. Template pages
+ * default to Indonesian (see LocaleProvider), so that's what crawlers see.
  */
 export function TemplateDetails({ template }: { template: CompanyTemplate }) {
-  const { locale } = useLocale();
-  const [lang, setLang] = useState<Locale>("id");
-
-  useEffect(() => {
-    try {
-      const chosen = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- follow an explicit language choice after mount
-      if (chosen === "en" || chosen === "id") setLang(chosen);
-    } catch {
-      /* storage unavailable: keep Indonesian */
-    }
-  }, [locale]);
+  const { locale: lang } = useLocale();
 
   const l = (v: L) => v[lang];
   const others = companyTemplates.filter((o) => o.slug !== template.slug);

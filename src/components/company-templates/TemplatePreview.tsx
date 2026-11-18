@@ -18,8 +18,7 @@ type DeviceId = (typeof DEVICES)[number]["id"];
 
 /** Full-screen live preview with a device switcher. */
 export function TemplatePreview({ template, children }: { template: CompanyTemplate; children?: ReactNode }) {
-  const { t, locale } = useLocale();
-  const loc = locale === "id" ? "id" : "en";
+  const { t, locale: loc } = useLocale();
   const [device, setDevice] = useState<DeviceId>("desktop");
 
   // Shareable device links: /templates/<slug>?device=mobile
@@ -42,7 +41,7 @@ export function TemplatePreview({ template, children }: { template: CompanyTempl
   const src = `/templates/${template.slug}/view`;
 
   return (
-    <div className="bg-neutral-200 dark:bg-neutral-900">
+    <div lang={loc} className="bg-neutral-200 dark:bg-neutral-900">
       <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-foreground/10 bg-background px-3 sm:px-4">
         <div className="flex min-w-0 items-center gap-3">
           <Link

@@ -13,14 +13,22 @@ import {
 
 const STORAGE_KEY = "porto-ai-selected-model-ref";
 
-function readInitialModelRef(
-  defaultModelRef: string,
-  groups: ModelGroup[]
-): string {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && isValidModelRef(saved, groups)) return saved;
-  }
+/** Model list used until /api/ai/models answers. */
+const fallbackGroups: ModelGroup[] = [
+  {
+    provider: "groq",
+    models: availableChatModels.groq,
+    available: true,
+  },
+  {
+    provider: "ollama",
+    models: availableChatModels.ollama,
+    available: true,
+  },
+];
+
+/** Server-safe initial model: the saved choice is applied after mount (see below). */
+function defaultModel(defaultModelRef: string, groups: ModelGroup[]): string {
   if (isValidModelRef(defaultModelRef, groups)) return defaultModelRef;
   for (const g of groups) {
     if (g.available && g.models[0]) {
@@ -38,22 +46,9 @@ type ApiModelsResponse = {
 };
 
 export function useChatModel(defaultModelRef: string) {
-  const fallbackGroups: ModelGroup[] = [
-    {
-      provider: "groq",
-      models: availableChatModels.groq,
-      available: true,
-    },
-    {
-      provider: "ollama",
-      models: availableChatModels.ollama,
-      available: true,
-    },
-  ];
-
   const [groups, setGroups] = useState<ModelGroup[]>(fallbackGroups);
   const [modelRef, setModelRefState] = useState(() =>
-    readInitialModelRef(defaultModelRef, fallbackGroups)
+    defaultModel(defaultModelRef, fallbackGroups)
   );
   const [confirmedModelRef, setConfirmedModelRef] = useState<string | null>(
     null
@@ -69,6 +64,18 @@ export function useChatModel(defaultModelRef: string) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Restore the saved model after hydration — reading localStorage during the
+    // first render made the server and client HTML differ (hydration error).
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && isValidModelRef(saved, fallbackGroups)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
+        setModelRefState(saved);
+      }
+    } catch {
+      /* storage unavailable: keep the default model */
+    }
 
     fetch("/api/ai/models")
       .then((res) => (res.ok ? res.json() : null))

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -28,31 +29,51 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-function readStoredLocale(): Locale {
-  if (typeof globalThis.window === "undefined") return DEFAULT_LOCALE;
-  const saved = globalThis.localStorage.getItem(LOCALE_STORAGE_KEY);
-  return saved === "id" || saved === "en" ? saved : DEFAULT_LOCALE;
+/** Language explicitly chosen with the toggle, or null when the visitor never chose. */
+function readStoredLocale(): Locale | null {
+  try {
+    const saved = globalThis.localStorage.getItem(LOCALE_STORAGE_KEY);
+    return saved === "id" || saved === "en" ? saved : null;
+  } catch {
+    return null;
+  }
 }
 
 function persistLocale(locale: Locale) {
-  globalThis.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  try {
+    globalThis.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    /* storage unavailable: the cookie still remembers the choice */
+  }
   document.cookie = `${LOCALE_COOKIE}=${locale};path=/;max-age=31536000;SameSite=Lax`;
-  document.documentElement.lang = locale;
+}
+
+/**
+ * Language used when the visitor hasn't chosen one. The portfolio defaults to
+ * English, but the company-profile template pages target Indonesian businesses,
+ * so they render (server-side too) in Indonesian.
+ */
+function routeDefaultLocale(pathname: string | null): Locale {
+  return pathname === "/templates" || pathname?.startsWith("/templates/") ? "id" : DEFAULT_LOCALE;
 }
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [ready, setReady] = useState(false);
+  const pathname = usePathname();
+  const [chosen, setChosen] = useState<Locale | null>(null);
+  const locale = chosen ?? routeDefaultLocale(pathname);
 
   useEffect(() => {
     const stored = readStoredLocale();
-    setLocaleState(stored);
-    document.documentElement.lang = stored;
-    setReady(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
+    if (stored) setChosen(stored);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
+    setChosen(next);
     persistLocale(next);
   }, []);
 
@@ -65,12 +86,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     () => ({ locale, setLocale, t }),
     [locale, setLocale, t]
   );
-
-  if (!ready) {
-    return (
-      <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
-    );
-  }
 
   return (
     <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>

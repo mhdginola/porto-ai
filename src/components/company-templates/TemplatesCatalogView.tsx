@@ -13,13 +13,13 @@ import { cn } from "@/lib/utils";
 const FILTERS: ("all" | TemplateLayout)[] = ["all", "corporate", "bold", "minimal"];
 
 export function TemplatesCatalogView() {
-  const { t, locale } = useLocale();
-  const loc = locale === "id" ? "id" : "en";
+  const { t, locale: loc } = useLocale();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const items = companyTemplates.filter((tpl) => filter === "all" || tpl.layout === filter);
 
   return (
-    <Container className="py-14">
+    <div lang={loc}>
+      <Container className="py-14">
       <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-primary-text">
         <LayoutTemplate className="h-3.5 w-3.5" /> {t("templates.badge")}
       </p>
@@ -112,6 +112,7 @@ export function TemplatesCatalogView() {
           </article>
         ))}
       </div>
-    </Container>
+      </Container>
+    </div>
   );
 }

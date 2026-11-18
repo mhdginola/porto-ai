@@ -4,9 +4,9 @@ import { companyTemplates } from "@/content/company-templates";
 import { jsonLdString, templateCatalogJsonLd } from "@/lib/company-template-seo";
 
 export const metadata: Metadata = {
-  title: "Company Profile Website Templates",
+  title: "Template Website Company Profile",
   description:
-    "Responsive company profile website templates for law firms, contractors, clinics, cafés, logistics and education — with live previews.",
+    "Template website company profile yang responsif untuk firma hukum, kontraktor, klinik, kafe, logistik, dan lembaga kursus — lengkap dengan preview langsung.",
   alternates: { canonical: "/templates" },
 };
 
