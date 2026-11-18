@@ -8,8 +8,7 @@ import { AUTH_DEMO_MODULE_IDS, hasModuleAccess } from "@/lib/auth-demo/permissio
 import { getAuthDemoSession } from "@/lib/auth-demo/session";
 import { customerIdForUser } from "@/lib/payment-demo/customer";
 import { MODULE_MIN_PLAN, planAllows } from "@/lib/payment-demo/entitlements";
-import { isXenditEnabled } from "@/lib/payment-demo/xendit";
-import { getEntitlement } from "@/lib/payment-demo/xendit-service";
+import { getEntitlement, isLiveBillingEnabled } from "@/lib/payment-demo/xendit-service";
 import { explorerAddressUrl, TOKEN_GATE } from "@/lib/web3/chain";
 import { checkTokenGate } from "@/lib/web3/token-gate";
 
@@ -79,7 +78,7 @@ export async function GET() {
 
     const body: ModulesResponse = {
       plan,
-      billingEnabled: isXenditEnabled(),
+      billingEnabled: isLiveBillingEnabled(),
       modules,
       tokenGate,
     };

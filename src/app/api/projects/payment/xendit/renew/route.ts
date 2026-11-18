@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { getCustomerId } from "@/lib/payment-demo/customer";
 import {
   errorResponse,
@@ -15,9 +16,14 @@ export async function POST(req: Request) {
   if (limited) return limited;
   const disabled = xenditDisabledResponse();
   if (disabled) return disabled;
+  const body = z
+    .object({ rail: z.enum(["xendit", "crypto"]).optional() })
+    .safeParse(await req.json().catch(() => ({})));
   try {
     const customerId = await getCustomerId();
-    return Response.json(await startRenewal(customerId, requestOrigin(req)));
+    return Response.json(
+      await startRenewal(customerId, requestOrigin(req), body.success ? body.data.rail : undefined)
+    );
   } catch (err) {
     return errorResponse(err, "renew");
   }

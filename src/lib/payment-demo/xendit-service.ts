@@ -24,6 +24,8 @@ import {
   quoteRenewal,
   type BillingCycle,
   type Invoice,
+  type CryptoQuote,
+  type PaymentRail,
   type PlanId,
   type Quote,
   type Subscription,
@@ -39,9 +41,19 @@ import {
 } from "@/lib/payment-demo/entitlements";
 import { invoiceNumber, newId } from "@/lib/payment-demo/server";
 import {
+  checkSettlement,
+  cryptoChannelLabel,
+  cryptoRailInfo,
+  explorerTxUrl,
+  isCryptoEnabled,
+  onchainInvoiceId,
+  signQuote,
+} from "@/lib/payment-demo/crypto";
+import {
   createXenditInvoice,
   expireXenditInvoice,
   getXenditInvoice,
+  isXenditEnabled,
   type XenditInvoice,
 } from "@/lib/payment-demo/xendit";
 
@@ -90,7 +102,25 @@ function toInvoice(row: PaymentInvoiceRow): Invoice {
     status,
     channel: row.paymentChannel,
     payUrl: status === "pending" ? row.invoiceUrl : null,
+    rail: row.rail as PaymentRail,
+    cryptoQuote:
+      row.rail === "crypto" && status === "pending" && row.railData?.quote
+        ? row.railData.quote
+        : null,
+    txUrl: row.railData?.txHash ? explorerTxUrl(row.railData.txHash) : null,
   };
+}
+
+/** Rails available on this server (Xendit and/or stablecoin). */
+export function isLiveBillingEnabled(): boolean {
+  return isXenditEnabled() || isCryptoEnabled();
+}
+
+export function resolveRail(requested?: PaymentRail): PaymentRail {
+  if (requested === "crypto" && isCryptoEnabled()) return "crypto";
+  if (requested === "xendit" && isXenditEnabled()) return "xendit";
+  if (requested) throw new PaymentDemoError("rail_unavailable");
+  return isXenditEnabled() ? "xendit" : "crypto";
 }
 
 /* ---------------- helpers ---------------- */
@@ -200,8 +230,9 @@ async function openInvoice(params: {
   lines: Invoice["lines"];
   /** Payment window in seconds (defaults to 1 hour for interactive checkout). */
   durationSeconds?: number;
-}): Promise<{ invoiceUrl: string | null }> {
-  const { customerId, origin, quote, reason, lines } = params;
+  rail: PaymentRail;
+}): Promise<{ invoiceUrl: string | null; crypto?: CryptoQuote; invoiceId?: string }> {
+  const { customerId, origin, quote, reason, lines, rail } = params;
   await expirePendingInvoices(customerId);
 
   const now = new Date();
@@ -221,6 +252,7 @@ async function openInvoice(params: {
       tax: quote.tax,
       total: quote.total,
       status: "PENDING",
+      rail,
     })
     .returning();
 
@@ -228,6 +260,33 @@ async function openInvoice(params: {
   if (quote.total === 0) {
     await applyPaid(externalId, { paidAt: now, method: "CREDIT", channel: "CREDIT" });
     return { invoiceUrl: null };
+  }
+
+  const duration = params.durationSeconds ?? CHECKOUT_INVOICE_SECONDS;
+
+  if (rail === "crypto") {
+    // The quote (amount in token units + deadline) is signed now; the contract
+    // will only accept exactly this payment for this invoice.
+    const cryptoQuote = await signQuote(externalId, quote.total, duration);
+    await db
+      .update(paymentInvoices)
+      .set({
+        railData: { quote: cryptoQuote },
+        expiresAt: new Date(cryptoQuote.deadline * 1000),
+      })
+      .where(eq(paymentInvoices.id, row.id));
+    await logEvent(db, customerId, "invoice.created", {
+      invoice: row.id,
+      number: row.number,
+      rail: "crypto",
+      onchain_invoice_id: cryptoQuote.invoiceId,
+      amount: quote.total,
+      token_amount: cryptoQuote.amount,
+      token: cryptoQuote.tokenSymbol,
+      chain_id: cryptoQuote.chainId,
+      deadline: new Date(cryptoQuote.deadline * 1000).toISOString(),
+    });
+    return { invoiceUrl: null, crypto: cryptoQuote, invoiceId: row.id };
   }
 
   let xendit: XenditInvoice;
@@ -238,7 +297,7 @@ async function openInvoice(params: {
       externalId,
       amount: quote.total,
       description: `Porto AI demo — ${plan.name} plan (${quote.cycle}) · ${row.number}`,
-      invoiceDuration: params.durationSeconds ?? CHECKOUT_INVOICE_SECONDS,
+      invoiceDuration: duration,
       successRedirectUrl: `${back}success`,
       failureRedirectUrl: `${back}failed`,
     });
@@ -377,6 +436,7 @@ export async function getXenditDemoState(
 
   return {
     account,
+    rails: { xendit: isXenditEnabled(), crypto: cryptoRailInfo() },
     subscription: sub ? toSubscription(sub) : null,
     scheduledChange:
       sub?.scheduledPlanId && sub.scheduledCycle
@@ -400,8 +460,10 @@ export async function startCheckout(
   customerId: string,
   planId: PlanId,
   cycle: BillingCycle,
-  origin: string
+  origin: string,
+  requestedRail?: PaymentRail
 ) {
+  const rail = resolveRail(requestedRail);
   await endLapsedSubscription(customerId);
   const sub = await activeSubscription(db, customerId);
   const quote = quoteChange(snapshot(sub), planId, cycle, new Date());
@@ -425,11 +487,20 @@ export async function startCheckout(
     origin,
     quote,
     lines,
+    rail,
     reason: quote.kind === "new" ? "subscription_create" : "subscription_update",
   });
 }
 
-function issueRenewal(sub: PaymentSubscriptionRow, origin: string) {
+/** Renew on the rail the customer last paid with, if it's still available. */
+function renewalRail(sub: PaymentSubscriptionRow, requested?: PaymentRail): PaymentRail {
+  if (requested) return resolveRail(requested);
+  const paidWithCrypto = sub.paymentChannel?.startsWith(`${cryptoRailInfo()?.tokenSymbol ?? "USDC"} ·`);
+  if (paidWithCrypto && isCryptoEnabled()) return "crypto";
+  return resolveRail();
+}
+
+function issueRenewal(sub: PaymentSubscriptionRow, origin: string, requested?: PaymentRail) {
   const planId = (sub.scheduledPlanId ?? sub.planId) as PlanId;
   const cycle = (sub.scheduledCycle ?? sub.cycle) as BillingCycle;
   const quote = quoteRenewal(planId, cycle, sub.currentPeriodEnd);
@@ -443,16 +514,17 @@ function issueRenewal(sub: PaymentSubscriptionRow, origin: string) {
     origin,
     quote,
     durationSeconds,
+    rail: renewalRail(sub, requested),
     reason: "subscription_cycle",
     lines: [{ description: `${getPlan(planId).name} plan (${cycle})`, amount: quote.price }],
   });
 }
 
 /** Manual trigger from the demo UI: issue the next period's invoice now. */
-export async function startRenewal(customerId: string, origin: string) {
+export async function startRenewal(customerId: string, origin: string, rail?: PaymentRail) {
   const sub = await activeSubscription(db, customerId);
   if (!sub || sub.cancelAtPeriodEnd) throw new PaymentDemoError("invalid_change");
-  return issueRenewal(sub, origin);
+  return issueRenewal(sub, origin, rail);
 }
 
 export type SubscriptionAction =
@@ -590,6 +662,17 @@ export async function reconcilePending(customerId: string) {
     );
   await Promise.all(
     pending
+      .filter((p) => p.rail === "crypto")
+      .map(async (p) => {
+        try {
+          await settleCryptoInvoice(p);
+        } catch (err) {
+          console.error("[payment-demo] crypto reconcile failed:", err);
+        }
+      })
+  );
+  await Promise.all(
+    pending
       .filter((p) => p.xenditInvoiceId)
       .map(async (p) => {
         try {
@@ -600,6 +683,68 @@ export async function reconcilePending(customerId: string) {
         }
       })
   );
+}
+
+/**
+ * Check a crypto invoice on-chain and apply it once confirmed. Settlement is
+ * read from the contract (`paidBy`), never trusted from the client.
+ */
+async function settleCryptoInvoice(
+  row: PaymentInvoiceRow,
+  txHash?: string
+): Promise<"paid" | "unconfirmed" | "unpaid"> {
+  if (row.status === "PAID") return "paid";
+  const settlement = await checkSettlement(onchainInvoiceId(row.externalId));
+  if (settlement.status !== "paid") return settlement.status;
+
+  await db
+    .update(paymentInvoices)
+    .set({
+      railData: {
+        ...row.railData,
+        payer: settlement.payer,
+        ...(txHash && /^0x[0-9a-fA-F]{64}$/.test(txHash) && { txHash }),
+      },
+    })
+    .where(eq(paymentInvoices.id, row.id));
+
+  const applied = await applyPaid(row.externalId, {
+    paidAt: new Date(),
+    method: "CRYPTO",
+    channel: cryptoChannelLabel(),
+  });
+  if (applied) {
+    await logEvent(
+      db,
+      row.customerId,
+      "crypto.payment.confirmed",
+      {
+        invoice: row.id,
+        number: row.number,
+        onchain_invoice_id: onchainInvoiceId(row.externalId),
+        payer: settlement.payer,
+        confirmed_at_block: settlement.blockNumber.toString(),
+        tx: txHash ?? null,
+      },
+      `crypto:${row.externalId}`
+    );
+  }
+  return "paid";
+}
+
+/** Called by the browser after its payment transaction; safe to call repeatedly. */
+export async function confirmCryptoInvoice(
+  customerId: string,
+  invoiceId: string,
+  txHash?: string
+): Promise<"paid" | "unconfirmed" | "unpaid"> {
+  const [row] = await db
+    .select()
+    .from(paymentInvoices)
+    .where(and(eq(paymentInvoices.id, invoiceId), eq(paymentInvoices.customerId, customerId)))
+    .limit(1);
+  if (!row || row.rail !== "crypto") throw new PaymentDemoError("not_found", 404);
+  return settleCryptoInvoice(row, txHash);
 }
 
 /** Effective plan for a customer — what feature gates should check. */

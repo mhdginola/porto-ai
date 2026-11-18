@@ -1,10 +1,14 @@
-import { PaymentDemoError } from "@/lib/payment-demo/xendit-service";
-import { isXenditEnabled, XenditError } from "@/lib/payment-demo/xendit";
+import { isLiveBillingEnabled, PaymentDemoError } from "@/lib/payment-demo/xendit-service";
+import { XenditError } from "@/lib/payment-demo/xendit";
 
+/** 503 unless at least one live rail (Xendit or stablecoin) is configured. */
 export function xenditDisabledResponse(): Response | null {
-  if (isXenditEnabled()) return null;
+  if (isLiveBillingEnabled()) return null;
   return Response.json(
-    { code: "xendit_disabled", error: "Set XENDIT_SECRET_KEY (test key) to enable Xendit mode." },
+    {
+      code: "xendit_disabled",
+      error: "Configure Xendit (XENDIT_SECRET_KEY) or crypto payments (CRYPTO_*) to enable live billing.",
+    },
     { status: 503 }
   );
 }

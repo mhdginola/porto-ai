@@ -187,6 +187,14 @@ export const paymentInvoices = pgTable(
     total: integer("total").notNull(),
     /** PENDING | PAID | EXPIRED */
     status: text("status").notNull(),
+    /** xendit | crypto */
+    rail: text("rail").notNull().default("xendit"),
+    /** Crypto rail: signed quote, payer and tx hash. */
+    railData: jsonb("rail_data").$type<{
+      quote?: import("@/lib/payment-demo/billing").CryptoQuote;
+      payer?: string;
+      txHash?: string;
+    }>(),
     paymentMethod: text("payment_method"),
     paymentChannel: text("payment_channel"),
     paidAt: timestamp("paid_at", { withTimezone: true }),

@@ -254,7 +254,7 @@ cron issues renewal invoices and ends unpaid subscriptions after a grace period.
 unlock modules in the Auth & Roles demo (entitlements checked server-side). The
 simulator covers card checkout with 3-D Secure, Luhn/expiry/CVC validation, and
 idempotency keys.`,
-    tags: ["Next.js", "TypeScript", "Xendit", "Payment Gateway", "Webhooks", "PostgreSQL", "Subscriptions"],
+    tags: ["Next.js", "TypeScript", "Xendit", "Payment Gateway", "Webhooks", "PostgreSQL", "Subscriptions", "Solidity", "Foundry", "viem", "USDC"],
     visibility: "public",
     category: "saas",
     role: "Creator",
@@ -264,6 +264,7 @@ idempotency keys.`,
       "Prorated upgrades, scheduled downgrades, cancel & resume",
       "Server-side pricing, idempotency keys, invoices, and webhook event log",
       "Xendit test-mode checkout + daily renewal cron; plans unlock modules in the Auth demo",
+      "Second rail: pay in USDC on Base Sepolia via a Solidity contract with EIP-712 server-signed quotes",
     ],
     year: 2026,
     liveUrl: "/projects/payment-subscription-demo",

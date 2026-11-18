@@ -26,6 +26,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/layout/LocaleProvider";
 import { CheckoutModal } from "@/components/payment-demo/CheckoutModal";
+import { CryptoPayModal } from "@/components/payment-demo/CryptoPayModal";
+import { Modal } from "@/components/ui/Modal";
 import {
   BrandMark,
   formatDateTime,
@@ -44,6 +46,8 @@ import {
   TAX_RATE,
   type BillingCycle,
   type CheckoutResponse,
+  type CryptoQuote,
+  type PaymentRail,
   type Invoice,
   type PaymentMethod,
   type Plan,
@@ -164,6 +168,14 @@ export function PaymentSubscriptionDemoView({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [returnStatus, setReturnStatus] = useState<"success" | "failed" | null>(null);
+  /** Live mode, stablecoin rail: invoice being paid from a wallet. */
+  const [cryptoPay, setCryptoPay] = useState<{
+    invoiceId: string;
+    quote: CryptoQuote;
+    totalIdr: number;
+  } | null>(null);
+  /** Live mode with both rails: plan waiting for a payment-method choice. */
+  const [railChoice, setRailChoice] = useState<Plan | null>(null);
 
   const errorText = useCallback(
     (code: string) => {
@@ -322,15 +334,23 @@ export function PaymentSubscriptionDemoView({
     setBusy(busyKey);
     setError(null);
     try {
-      const { invoiceUrl } = await xenditFetch<{ invoiceUrl: string | null }>(path, {
+      const res = await xenditFetch<{
+        invoiceUrl: string | null;
+        crypto?: CryptoQuote;
+        invoiceId?: string;
+      }>(path, {
         method: "POST",
         body: JSON.stringify(body ?? {}),
       });
-      if (invoiceUrl) {
-        globalThis.location.assign(invoiceUrl);
+      if (res.invoiceUrl) {
+        globalThis.location.assign(res.invoiceUrl);
         return; // keep the busy state while navigating away
       }
-      await loadXendit(false); // fully covered by credit — applied immediately
+      const state = await loadXendit(false); // shows the new pending invoice (or credit-only result)
+      if (res.crypto && res.invoiceId) {
+        const total = state?.invoices.find((i) => i.id === res.invoiceId)?.total ?? 0;
+        setCryptoPay({ invoiceId: res.invoiceId, quote: res.crypto, totalIdr: total });
+      }
     } catch (err) {
       setError(errorText((err as Error).message));
     }
@@ -343,7 +363,16 @@ export function PaymentSubscriptionDemoView({
 
     if (kind === "new" || kind === "upgrade") {
       if (isX) {
-        await xenditPay("/checkout", `checkout:${plan.id}`, { planId: plan.id, cycle });
+        const rails = xs?.rails;
+        if (rails?.xendit && rails.crypto) {
+          setRailChoice(plan); // let the visitor pick Xendit or USDC
+          return;
+        }
+        await xenditPay("/checkout", `checkout:${plan.id}`, {
+          planId: plan.id,
+          cycle,
+          rail: rails?.crypto && !rails.xendit ? "crypto" : "xendit",
+        });
         return;
       }
       const at = now();
@@ -601,14 +630,19 @@ export function PaymentSubscriptionDemoView({
                       : "text-foreground/60 hover:text-foreground"
                   )}
                 >
-                  {t(m === "simulator" ? "payment.mode.simulator" : "payment.mode.xendit")}
+                  {t(m === "simulator" ? "payment.mode.simulator" : "payment.mode.live")}
                 </button>
               );
             })}
           </div>
           <p className="max-w-xl text-xs text-foreground/50">
             {isX
-              ? t("payment.xendit.info")
+              ? [
+                  xs?.rails.xendit !== false ? t("payment.xendit.info") : null,
+                  xs?.rails.crypto ? t("payment.crypto.info") : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
               : !xenditEnabled
                 ? t("payment.mode.xenditDisabled")
                 : null}
@@ -653,6 +687,20 @@ export function PaymentSubscriptionDemoView({
                   <RefreshCw className="h-3.5 w-3.5" />
                   {t("payment.xendit.checkStatus")}
                 </Button>
+                {pendingInvoice.rail === "crypto" && pendingInvoice.cryptoQuote && (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setCryptoPay({
+                        invoiceId: pendingInvoice.id,
+                        quote: pendingInvoice.cryptoQuote!,
+                        totalIdr: pendingInvoice.total,
+                      })
+                    }
+                  >
+                    {t("payment.crypto.payPending")}
+                  </Button>
+                )}
                 {pendingInvoice.payUrl && (
                   <a
                     href={pendingInvoice.payUrl}
@@ -1014,6 +1062,39 @@ export function PaymentSubscriptionDemoView({
         </div>
       </Container>
 
+      <CryptoPayModal
+        open={cryptoPay !== null}
+        invoiceId={cryptoPay?.invoiceId ?? null}
+        quote={cryptoPay?.quote ?? null}
+        rail={xs?.rails.crypto ?? null}
+        totalIdr={cryptoPay?.totalIdr ?? 0}
+        onClose={() => {
+          setCryptoPay(null);
+          void loadXendit(true);
+        }}
+        onPaid={(state) => {
+          setXs(state);
+          setReturnStatus("success");
+        }}
+      />
+
+      {railChoice && xs?.rails.crypto && (
+        <RailChooser
+          plan={railChoice}
+          cycle={cycle}
+          totalIdr={quoteChange(snapshot, railChoice.id, cycle, now()).total}
+          crypto={xs.rails.crypto}
+          loc={loc}
+          t={t}
+          onClose={() => setRailChoice(null)}
+          onChoose={(rail) => {
+            const plan = railChoice;
+            setRailChoice(null);
+            void xenditPay("/checkout", `checkout:${plan.id}`, { planId: plan.id, cycle, rail });
+          }}
+        />
+      )}
+
       <CheckoutModal
         open={checkout !== null}
         quote={checkout?.quote ?? null}
@@ -1028,6 +1109,65 @@ export function PaymentSubscriptionDemoView({
         }}
       />
     </div>
+  );
+}
+
+function RailChooser({
+  plan,
+  cycle,
+  totalIdr,
+  crypto,
+  loc,
+  t,
+  onClose,
+  onChoose,
+}: {
+  plan: Plan;
+  cycle: BillingCycle;
+  totalIdr: number;
+  crypto: NonNullable<XenditDemoState["rails"]["crypto"]>;
+  loc: "en" | "id";
+  t: (key: TranslationKey) => string;
+  onClose: () => void;
+  onChoose: (rail: PaymentRail) => void;
+}) {
+  const tokenAmount = Math.ceil((totalIdr / crypto.idrPerToken) * 10 ** crypto.tokenDecimals) / 10 ** crypto.tokenDecimals;
+  const options: { rail: PaymentRail; title: string; desc: string; amount: string }[] = [
+    {
+      rail: "xendit",
+      title: t("payment.method.xendit"),
+      desc: t("payment.method.xenditDesc"),
+      amount: formatIdr(totalIdr, loc),
+    },
+    {
+      rail: "crypto",
+      title: t("payment.method.crypto").replace("{chain}", crypto.chainName),
+      desc: t("payment.method.cryptoDesc"),
+      amount: `≈ ${tokenAmount} ${crypto.tokenSymbol}`,
+    },
+  ];
+  return (
+    <Modal open onClose={onClose} title={t("payment.method.title")}>
+      <p className="-mt-2 mb-4 text-sm text-foreground/60">
+        {plan.name} · {t(cycle === "monthly" ? "payment.cycle.monthly" : "payment.cycle.yearly")}
+      </p>
+      <div className="space-y-2">
+        {options.map((o) => (
+          <button
+            key={o.rail}
+            type="button"
+            onClick={() => onChoose(o.rail)}
+            className="flex w-full items-center justify-between gap-3 rounded-xl border border-foreground/10 p-4 text-left transition-colors hover:border-primary/40 hover:bg-primary-soft/30"
+          >
+            <span>
+              <span className="block text-sm font-semibold">{o.title}</span>
+              <span className="mt-0.5 block text-xs text-foreground/55">{o.desc}</span>
+            </span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums">{o.amount}</span>
+          </button>
+        ))}
+      </div>
+    </Modal>
   );
 }
 
@@ -1173,6 +1313,14 @@ function InvoiceTable({
                       {inv.status === "paid" && inv.channel && (
                         <p className="mt-1 text-[11px] text-foreground/45">
                           {t("payment.xendit.paidVia").replace("{channel}", inv.channel)}
+                          {inv.txUrl && (
+                            <>
+                              {" · "}
+                              <a href={inv.txUrl} target="_blank" rel="noreferrer" className="text-primary-text hover:underline">
+                                tx ↗
+                              </a>
+                            </>
+                          )}
                         </p>
                       )}
                       {inv.status === "pending" && inv.payUrl && (

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PaymentSubscriptionDemoView } from "@/components/pages/PaymentSubscriptionDemoView";
-import { isXenditEnabled } from "@/lib/payment-demo/xendit";
+import { isLiveBillingEnabled } from "@/lib/payment-demo/xendit-service";
 
 export const metadata: Metadata = {
   title: "Payment & Subscription Demo",
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function PaymentSubscriptionDemoPage() {
-  return <PaymentSubscriptionDemoView xenditEnabled={isXenditEnabled()} />;
+  return <PaymentSubscriptionDemoView xenditEnabled={isLiveBillingEnabled()} />;
 }

@@ -1,6 +1,5 @@
 import { cronOrigin, isAuthorizedCron } from "@/lib/cron-auth";
-import { isXenditEnabled } from "@/lib/payment-demo/xendit";
-import { runRenewalJob } from "@/lib/payment-demo/xendit-service";
+import { isLiveBillingEnabled, runRenewalJob } from "@/lib/payment-demo/xendit-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +13,7 @@ export async function GET(req: Request) {
   if (!isAuthorizedCron(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!isXenditEnabled()) {
+  if (!isLiveBillingEnabled()) {
     return Response.json({ skipped: "xendit_disabled" });
   }
 

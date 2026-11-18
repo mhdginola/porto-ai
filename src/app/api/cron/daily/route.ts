@@ -1,7 +1,6 @@
 import { cronOrigin, isAuthorizedCron } from "@/lib/cron-auth";
 import { runMaintenance } from "@/lib/maintenance";
-import { isXenditEnabled } from "@/lib/payment-demo/xendit";
-import { runRenewalJob } from "@/lib/payment-demo/xendit-service";
+import { isLiveBillingEnabled, runRenewalJob } from "@/lib/payment-demo/xendit-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +17,7 @@ export async function GET(req: Request) {
 
   const [maintenance, renewals] = await Promise.allSettled([
     runMaintenance(),
-    isXenditEnabled() ? runRenewalJob(cronOrigin()) : Promise.resolve("xendit_disabled"),
+    isLiveBillingEnabled() ? runRenewalJob(cronOrigin()) : Promise.resolve("xendit_disabled"),
   ]);
 
   const result = {

@@ -243,6 +243,37 @@ export type Subscription = {
 
 export type InvoiceLine = { description: string; amount: number };
 
+export type PaymentRail = "xendit" | "crypto";
+
+/** EIP-712 quote signed by the server; the wallet submits it to the payments contract. */
+export type CryptoQuote = {
+  invoiceId: `0x${string}`;
+  /** Token base units as a decimal string (bigint-safe for JSON). */
+  amount: string;
+  /** Unix seconds. */
+  deadline: number;
+  signature: `0x${string}`;
+  chainId: number;
+  contract: `0x${string}`;
+  token: `0x${string}`;
+  tokenSymbol: string;
+  tokenDecimals: number;
+};
+
+/** Public info about the stablecoin rail, for the UI. */
+export type CryptoRailInfo = {
+  chainId: number;
+  chainName: string;
+  explorerUrl: string | null;
+  rpcUrl: string | null;
+  contract: `0x${string}`;
+  token: `0x${string}`;
+  tokenSymbol: string;
+  tokenDecimals: number;
+  idrPerToken: number;
+  faucetUrl: string | null;
+};
+
 export type Invoice = {
   id: string;
   number: string;
@@ -258,6 +289,12 @@ export type Invoice = {
   /** Xendit mode: channel that paid it (e.g. "BCA", "QRIS") and hosted payment link. */
   channel?: string | null;
   payUrl?: string | null;
+  /** Live mode: which rail the invoice is payable on. */
+  rail?: PaymentRail;
+  /** Pending crypto invoice: the signed quote to pay with a wallet. */
+  cryptoQuote?: CryptoQuote | null;
+  /** Paid crypto invoice: block-explorer link to the payment transaction. */
+  txUrl?: string | null;
 };
 
 export type WebhookEventType =
@@ -268,6 +305,7 @@ export type WebhookEventType =
   | "invoice.paid"
   | "invoice.expired"
   | "xendit.invoice.callback"
+  | "crypto.payment.confirmed"
   | "customer.subscription.created"
   | "customer.subscription.updated"
   | "customer.subscription.deleted";
@@ -314,6 +352,8 @@ export type RenewResponse =
 export type XenditDemoState = {
   /** Auth-demo account the subscription belongs to; null = anonymous browser. */
   account: { name: string; email: string } | null;
+  /** Payment rails configured on this server. */
+  rails: { xendit: boolean; crypto: CryptoRailInfo | null };
   subscription: Subscription | null;
   scheduledChange: { planId: PlanId; cycle: BillingCycle } | null;
   paymentChannel: string | null;

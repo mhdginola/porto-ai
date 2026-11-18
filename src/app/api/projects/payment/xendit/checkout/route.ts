@@ -13,9 +13,13 @@ export const runtime = "nodejs";
 const schema = z.object({
   planId: z.enum(["pro", "business"]),
   cycle: z.enum(["monthly", "yearly"]),
+  rail: z.enum(["xendit", "crypto"]).optional(),
 });
 
-/** Creates a Xendit invoice for a new plan or an upgrade; returns its payment URL. */
+/**
+ * Creates an invoice for a new plan or an upgrade. Xendit rail → hosted payment
+ * URL; crypto rail → EIP-712 signed quote for the wallet to pay on-chain.
+ */
 export async function POST(req: Request) {
   const limited = await rateLimit(req, POLICIES.xenditInvoice);
   if (limited) return limited;
@@ -30,7 +34,8 @@ export async function POST(req: Request) {
       customerId,
       parsed.data.planId,
       parsed.data.cycle,
-      requestOrigin(req)
+      requestOrigin(req),
+      parsed.data.rail
     );
     return Response.json(result);
   } catch (err) {

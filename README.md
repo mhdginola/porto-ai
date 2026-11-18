@@ -258,6 +258,23 @@ Catatan:
   langganan yang dibatalkan atau tidak dibayar setelah masa tenggang 3 hari.
   Tombol "Buat invoice perpanjangan" di demo tetap ada sebagai pemicu manual.
 
+### Rail kedua: bayar dengan USDC (testnet)
+
+Mode **Live** bisa memakai Xendit, USDC, atau keduanya (pengunjung memilih saat checkout).
+Kontrak `contracts/src/SubscriptionPayments.sol` (Foundry, lihat `contracts/README.md`):
+
+1. Server membuat invoice lalu menandatangani **quote EIP-712** `{invoiceId, amount, deadline}`.
+2. Wallet: `approve` USDC (jumlah pas, hanya kalau allowance kurang) → `pay(...)` ke kontrak.
+   Kontrak menolak jumlah yang diubah, quote kedaluwarsa, dan pembayaran ganda; USDC
+   langsung diteruskan ke treasury (kontrak tidak menyimpan dana).
+3. Server memverifikasi dengan membaca `paidBy(invoiceId)` di blok yang sudah punya
+   `CRYPTO_CONFIRMATIONS` konfirmasi (tahan reorg) — lewat `crypto-confirm` dari browser,
+   atau rekonsiliasi saat halaman dibuka. Lalu langganan diaktifkan seperti Xendit.
+
+Harga testnet memakai kurs demo `CRYPTO_IDR_PER_TOKEN` (default 1 USDC = Rp100.000).
+Perpanjangan memakai rail terakhir yang dipakai pelanggan. Hanya chain testnet yang diterima
+(Base Sepolia 84532, lokal 31337).
+
 ### Integrasi dengan Auth demo (entitlements)
 
 Saat login di `/projects/auth-demo`, langganan Xendit terikat ke akun (`usr_<id>`), bukan
@@ -356,7 +373,7 @@ produksi); tanpa itu semua `/admin` mengembalikan 404.
 - [x] Kotak masuk admin untuk lead
 - [x] Rate limiting + validasi input di semua endpoint publik
 - [x] Sign-In with Ethereum + modul token-gated (Base Sepolia)
-- [ ] Bayar langganan dengan stablecoin testnet (smart contract + Foundry)
+- [x] Bayar langganan dengan USDC testnet (smart contract Solidity + quote EIP-712)
 - [ ] "Tanya tentang project ini" — chatbot per halaman project
 - [ ] MDX blog dengan auto-ingest ke RAG
 - [x] Hybrid search RAG (keyword + vector) — jalan juga tanpa embedding provider
