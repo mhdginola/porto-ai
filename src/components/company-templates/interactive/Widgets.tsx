@@ -124,7 +124,7 @@ function BookingWidget({ template, widget }: Props & { widget: Extract<TemplateW
                 aria-pressed={day === i}
                 className={cn("min-w-[4.25rem] shrink-0 rounded-xl border px-2 py-2 text-center text-xs transition-colors", day === i ? c.chipActive : c.chip)}
               >
-                <span className="block uppercase opacity-80">{DAY.format(d)}</span>
+                <span className="block uppercase">{DAY.format(d)}</span>
                 <span className="block text-sm font-semibold">{DATE.format(d)}</span>
               </button>
             ))}
@@ -157,7 +157,7 @@ function BookingWidget({ template, widget }: Props & { widget: Extract<TemplateW
           ].map(([k, v]) => (
             <div key={k}>
               <dt className={cn("text-xs", c.muted)}>{k}</dt>
-              <dd className={cn("font-medium", c.text, v === "Pilih jam" && "opacity-50")}>{v}</dd>
+              <dd className={cn("font-medium", v === "Pilih jam" ? cn(c.muted, "italic") : c.text)}>{v}</dd>
             </div>
           ))}
         </dl>
@@ -241,12 +241,12 @@ function EstimatorWidget({ template, widget }: Props & { widget: Extract<Templat
 
       <div className="flex flex-col justify-between rounded-2xl bg-[var(--tp)] p-6 text-neutral-950">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide opacity-80">Estimasi biaya</p>
+          <p className="text-sm font-semibold uppercase tracking-wide">Estimasi biaya</p>
           <p className="mt-3 text-3xl font-black leading-tight md:text-4xl">{compact(low)} – {compact(high)}</p>
-          <p className="mt-2 text-sm opacity-80">≈ {rupiah(Math.round((low + high) / 2 / area))} per m² (rata-rata)</p>
+          <p className="mt-2 text-sm">≈ {rupiah(Math.round((low + high) / 2 / area))} per m² (rata-rata)</p>
           <div className="mt-6 grid grid-cols-2 gap-4 border-t border-black/15 pt-5 text-sm">
-            <div><p className="opacity-70">Perkiraan durasi</p><p className="text-lg font-bold">{months} bulan</p></div>
-            <div><p className="opacity-70">Luas total</p><p className="text-lg font-bold">{(area * floors).toLocaleString("id-ID")} m²</p></div>
+            <div><p>Perkiraan durasi</p><p className="text-lg font-bold">{months} bulan</p></div>
+            <div><p>Luas total</p><p className="text-lg font-bold">{(area * floors).toLocaleString("id-ID")} m²</p></div>
           </div>
         </div>
         <button
@@ -261,7 +261,7 @@ function EstimatorWidget({ template, widget }: Props & { widget: Extract<Templat
         >
           Minta survei & RAB
         </button>
-        <p className="mt-2 text-center text-[11px] opacity-70">Angka indikatif, bukan penawaran resmi.</p>
+        <p className="mt-2 text-center text-[11px]">Angka indikatif, bukan penawaran resmi.</p>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ export function tone(dark: boolean) {
         subtle: "bg-slate-50",
         border: "border-slate-200",
         text: "text-slate-900",
-        muted: "text-slate-500",
+        muted: "text-slate-600",
         input:
           "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[var(--tp)] focus:ring-2 focus:ring-[var(--tp)]/15",
         chip: "border-slate-300 text-slate-600 hover:border-slate-400",

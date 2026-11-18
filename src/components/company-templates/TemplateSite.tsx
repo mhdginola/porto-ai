@@ -41,6 +41,7 @@ import { CountUp, Reveal } from "@/components/company-templates/interactive/Moti
 import { MobileMenu, SpyNav, type NavLink } from "@/components/company-templates/interactive/Navigation";
 import { TemplateShell } from "@/components/company-templates/interactive/TemplateShell";
 import { TemplateWidgetView } from "@/components/company-templates/interactive/Widgets";
+import { jsonLdString, templateJsonLd } from "@/lib/company-template-seo";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<TemplateIcon, LucideIcon> = {
@@ -99,18 +100,31 @@ export function TemplateSite({ template }: { template: CompanyTemplate }) {
   const vars = {
     "--tp": template.theme.primary,
     "--ta": template.theme.accent,
+    // Accent as *text* needs more contrast on light backgrounds (WCAG AA 4.5:1).
+    "--ta-text": template.theme.dark
+      ? template.theme.accent
+      : `color-mix(in oklab, ${template.theme.accent}, black 52%)`,
   } as CSSProperties;
+  const pageBg = template.theme.dark ? "#0a0a0a" : "#ffffff";
   const font = template.theme.font === "serif" ? "font-serif" : "font-sans";
 
   return (
     <div
       id="top"
+      lang="id"
       style={vars}
       className={cn(
         "min-h-screen scroll-smooth antialiased",
         template.theme.dark ? "bg-neutral-950 text-neutral-100" : "bg-white text-slate-900"
       )}
     >
+      {/* The template is the whole document: own background (not the portfolio's
+          theme), and schema.org data for search engines. */}
+      <style>{`html,body{background:${pageBg};color-scheme:${template.theme.dark ? "dark" : "light"}}`}</style>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdString(templateJsonLd(template)) }}
+      />
       <TemplateShell companyName={template.company.name} whatsapp={template.whatsapp} dark={template.theme.dark}>
         {template.layout === "corporate" && <CorporateLayout t={template} font={font} />}
         {template.layout === "bold" && <BoldLayout t={template} font={font} />}
@@ -119,7 +133,7 @@ export function TemplateSite({ template }: { template: CompanyTemplate }) {
       <p
         className={cn(
           "py-3 text-center text-[11px]",
-          template.theme.dark ? "bg-black text-neutral-500" : "bg-slate-100 text-slate-500"
+          template.theme.dark ? "bg-black text-neutral-400" : "bg-slate-100 text-slate-600"
         )}
       >
         Template demo · konten fiktif · dibuat oleh Ginola
@@ -147,7 +161,7 @@ function CorporateLayout({ t, font }: LayoutProps) {
         </div>
       </div>
 
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <a href="#top" className="flex items-center gap-2.5">
             <span className={cn("flex h-9 w-9 items-center justify-center rounded-md bg-[var(--tp)] text-sm font-bold text-white", font)}>
@@ -174,7 +188,7 @@ function CorporateLayout({ t, font }: LayoutProps) {
       <section className="bg-gradient-to-br from-slate-50 to-white">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:grid-cols-[1.3fr_1fr]">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ta)]">{t.hero.eyebrow}</p>
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ta-text)]">{t.hero.eyebrow}</p>
             <h1 className={cn("mt-4 text-4xl font-bold leading-tight text-[var(--tp)] md:text-5xl", font)}>{t.hero.title}</h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-600">{t.hero.subtitle}</p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -191,11 +205,11 @@ function CorporateLayout({ t, font }: LayoutProps) {
               {t.stats.map((s) => (
                 <div key={s.label}>
                   <p className={cn("text-3xl font-bold text-[var(--ta)]", font)}><CountUp value={s.value} /></p>
-                  <p className="mt-1 text-sm text-white/75">{s.label}</p>
+                  <p className="mt-1 text-sm text-white/90">{s.label}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-8 border-t border-white/15 pt-6 text-sm text-white/80">
+            <div className="mt-8 border-t border-white/15 pt-6 text-sm text-white/90">
               <Quote className="mb-2 h-5 w-5 text-[var(--ta)]" />
               {t.testimonials[0].quote}
               <p className="mt-2 text-xs font-semibold text-white">— {t.testimonials[0].name}</p>
@@ -251,7 +265,7 @@ function CorporateLayout({ t, font }: LayoutProps) {
         <ol className="mt-10 grid gap-6 md:grid-cols-3 lg:grid-cols-4">
           {t.process.map((p, i) => (
             <li key={p.title} className="relative rounded-xl border-t-4 border-[var(--tp)] bg-white p-6 shadow-sm">
-              <span className={cn("text-4xl font-bold text-[var(--tp)]/15", font)}>0{i + 1}</span>
+              <span className={cn("text-3xl font-bold text-[var(--tp)]", font)}>0{i + 1}</span>
               <h3 className="mt-2 font-bold">{p.title}</h3>
               <p className="mt-2 text-sm text-slate-600">{p.description}</p>
             </li>
@@ -285,7 +299,7 @@ function CorporateLayout({ t, font }: LayoutProps) {
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-14 md:flex-row md:items-center">
           <div>
             <h2 className={cn("text-2xl font-bold md:text-3xl", font)}>{t.cta.title}</h2>
-            <p className="mt-2 text-white/75">{t.cta.subtitle}</p>
+            <p className="mt-2 text-white/90">{t.cta.subtitle}</p>
           </div>
           <a href="#contact" className="rounded-md bg-[var(--ta)] px-6 py-3 font-semibold text-slate-900">{t.cta.button}</a>
         </div>
@@ -392,7 +406,7 @@ function BoldLayout({ t, font }: LayoutProps) {
       </section>
 
       <section id="services" className="mx-auto max-w-6xl px-6 py-24">
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--ta)]">Layanan</p>
+        <h2 className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--ta)]">Layanan</h2>
         <div className="mt-8 divide-y divide-neutral-800 border-y border-neutral-800">
           {t.services.map((s, i) => {
             const Icon = ICONS[s.icon];
@@ -418,7 +432,7 @@ function BoldLayout({ t, font }: LayoutProps) {
         <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 md:grid-cols-2">
           <h2 className={cn("text-4xl font-black leading-tight md:text-5xl", font)}>{t.about.title}</h2>
           <div>
-            <p className="text-lg leading-relaxed text-neutral-900/80">{t.about.body}</p>
+            <p className="text-lg leading-relaxed text-neutral-950">{t.about.body}</p>
             <ul className="mt-8 grid gap-3">
               {t.about.points.map((p) => (
                 <li key={p} className="flex items-center gap-3 border-b border-neutral-950/15 pb-3 font-semibold">
@@ -431,7 +445,7 @@ function BoldLayout({ t, font }: LayoutProps) {
       </section>
 
       <section id="process" className="mx-auto max-w-6xl px-6 py-24">
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--ta)]">Proses</p>
+        <h2 className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--ta)]">Proses</h2>
         <div className="mt-10 grid gap-px overflow-hidden rounded-2xl bg-neutral-800 md:grid-cols-4">
           {t.process.map((p, i) => (
             <div key={p.title} className="bg-neutral-950 p-8">
@@ -469,7 +483,7 @@ function BoldLayout({ t, font }: LayoutProps) {
 function MinimalLayout({ t, font }: LayoutProps) {
   return (
     <>
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
           <a href="#top" className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-[var(--tp)]" />
@@ -497,7 +511,7 @@ function MinimalLayout({ t, font }: LayoutProps) {
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--tp)]" /> {t.hero.eyebrow}
           </span>
           <h1 className={cn("mt-6 text-4xl font-semibold leading-tight tracking-tight md:text-6xl", font)}>{t.hero.title}</h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-slate-500">{t.hero.subtitle}</p>
+          <p className="mx-auto mt-6 max-w-xl text-lg text-slate-600">{t.hero.subtitle}</p>
           <div className="mt-9 flex flex-wrap justify-center gap-3">
             <a href="#contact" className="rounded-full bg-[var(--tp)] px-6 py-3 font-medium text-white hover:opacity-90">{t.hero.cta}</a>
             <a href="#services" className="rounded-full px-6 py-3 font-medium text-slate-600 hover:text-slate-900">
@@ -588,7 +602,7 @@ function MinimalLayout({ t, font }: LayoutProps) {
       <section id="contact" className="mx-auto max-w-5xl px-6 pb-24">
         <div className="rounded-3xl bg-[var(--tp)] p-8 text-white md:p-12">
           <h2 className={cn("text-3xl font-semibold tracking-tight", font)}>{t.cta.title}</h2>
-          <p className="mt-2 text-white/80">{t.cta.subtitle}</p>
+          <p className="mt-2 text-white">{t.cta.subtitle}</p>
           <div className="mt-8 grid gap-4 text-sm md:grid-cols-4">
             {[
               { icon: MapPin, value: t.contact.address },
@@ -596,9 +610,9 @@ function MinimalLayout({ t, font }: LayoutProps) {
               { icon: Mail, value: t.contact.email },
               { icon: Clock, value: t.contact.hours },
             ].map(({ icon: Icon, value }) => (
-              <div key={value} className="rounded-2xl bg-white/10 p-4">
+              <div key={value} className="rounded-2xl bg-black/15 p-4">
                 <Icon className="h-4 w-4 text-[var(--ta)]" />
-                <p className="mt-2 text-white/90">{value}</p>
+                <p className="mt-2 text-white">{value}</p>
               </div>
             ))}
           </div>
@@ -662,7 +676,7 @@ function SectionHeading({
 }) {
   return (
     <div className={align === "center" ? "text-center" : ""}>
-      <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ta)] [filter:brightness(0.75)]">{eyebrow}</p>
+      <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ta-text)]">{eyebrow}</p>
       <h2 className={cn("mt-2 text-3xl font-bold tracking-tight md:text-4xl", font, className)}>{title}</h2>
     </div>
   );

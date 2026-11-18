@@ -54,8 +54,10 @@ export function TestimonialCarousel({ items, dark, large }: { items: Testimonial
                 aria-label={`Testimoni ${i + 1}`}
                 aria-current={i === index}
                 onClick={() => setIndex(i)}
-                className={cn("h-2 rounded-full transition-all", i === index ? "w-6 bg-[var(--tp)]" : cn("w-2", dark ? "bg-neutral-700" : "bg-slate-300"))}
-              />
+                className="flex h-6 min-w-6 items-center justify-center"
+              >
+                <span className={cn("h-2 rounded-full transition-all", i === index ? "w-6 bg-[var(--tp)]" : cn("w-2", dark ? "bg-neutral-600" : "bg-slate-400"))} />
+              </button>
             ))}
           </div>
           <button type="button" aria-label="Berikutnya" onClick={() => go(1)} className={cn("rounded-full border p-2", c.chip)}>

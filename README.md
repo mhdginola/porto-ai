@@ -322,6 +322,13 @@ Menu **Templates** (`/templates`) — katalog template website company profile u
 - Semua aksi berakhir di **preview pesan WhatsApp** — demo tidak pernah membuka `wa.me`
   karena nomor di template fiktif (bisa jadi milik orang sungguhan). Untuk situs klien,
   ganti preview dengan link `https://wa.me/<nomor>?text=<pesan>`.
+- **SEO** (`src/lib/company-template-seo.ts`): metadata per template (title, description,
+  canonical, Open Graph + gambar OG otomatis, `lang="id"`), JSON-LD schema.org per industri
+  (`LegalService`, `MedicalClinic`, `CafeOrCoffeeShop`, `GeneralContractor`, …) dengan alamat,
+  telepon, jam buka, layanan, dan `FAQPage`. Halaman demo tetap `noindex` (perusahaan fiktif);
+  untuk situs klien panggil `templateMetadata(tpl, { indexable: true })`.
+  Lighthouse (build produksi, mobile): Performance 100, Accessibility 100, SEO 100 saat
+  indexable, Best Practices 96 (hanya 404 script Vercel Analytics di luar Vercel).
 
 ## Smart contact form
 

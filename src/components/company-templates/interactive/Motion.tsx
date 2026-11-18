@@ -49,8 +49,36 @@ export function Reveal({ children, delay = 0, className }: { children: ReactNode
  */
 export function CountUp({ value, duration = 1400 }: { value: string; duration?: number }) {
   const match = value.match(/^([^\d]*)([\d.,]+)(.*)$/);
-  const { ref, visible } = useOnceVisible<HTMLSpanElement>(0.4);
+  const ref = useRef<HTMLSpanElement>(null);
+  const [visible, setVisible] = useState(false);
   const [shown, setShown] = useState(value);
+
+  // Numbers already on screen at load keep their final value: re-painting them
+  // during an animation would push back Largest Contentful Paint (the hero stats
+  // are often the LCP element). Only numbers scrolled into view later animate.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let first = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (first) {
+          first = false;
+          if (entry.isIntersecting) {
+            observer.disconnect();
+            return;
+          }
+        }
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!visible || !match) return;

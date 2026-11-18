@@ -97,6 +97,19 @@ export type CompanyTemplate = {
   contact: { address: string; phone: string; email: string; hours: string };
   /** Shown in the WhatsApp preview (fictional — the demo never opens wa.me). */
   whatsapp: string;
+  /** Structured data (schema.org) for search engines. */
+  seo: {
+    /** schema.org type(s), e.g. "LegalService", ["EducationalOrganization", "LocalBusiness"]. */
+    schemaType: string | string[];
+    locality: string;
+    region: string;
+    /** schema.org openingHours format, e.g. "Mo-Fr 08:00-17:00". */
+    openingHours: string[];
+    priceRange?: string;
+    keywords: string[];
+    /** Override for the <title> when "name — tagline di city" reads awkwardly. */
+    title?: string;
+  };
   faq: { q: string; a: string }[];
   widget: TemplateWidget;
 };
@@ -178,6 +191,14 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Senin–Jumat, 08.00–17.00",
     },
     whatsapp: "0812-5550-0123",
+    seo: {
+      schemaType: "LegalService",
+      locality: "Jakarta Selatan",
+      region: "DKI Jakarta",
+      openingHours: ["Mo-Fr 08:00-17:00"],
+      priceRange: "$$$",
+      keywords: ["firma hukum Jakarta", "konsultan hukum", "pengacara korporasi", "advokat"],
+    },
     faq: [
       { q: "Apakah konsultasi awal benar-benar gratis?", a: "Ya. Konsultasi awal 30 menit tidak dikenakan biaya dan tidak mengikat. Setelahnya kami kirimkan proposal tertulis beserta estimasi biaya." },
       { q: "Bagaimana sistem biayanya?", a: "Tersedia biaya per jam, biaya tetap per pekerjaan, atau retainer bulanan. Semua disepakati tertulis sebelum pekerjaan dimulai." },
@@ -266,6 +287,13 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Senin–Sabtu, 07.30–16.30",
     },
     whatsapp: "0812-0000-1234",
+    seo: {
+      schemaType: "GeneralContractor",
+      locality: "Cikarang",
+      region: "Jawa Barat",
+      openingHours: ["Mo-Sa 07:30-16:30"],
+      keywords: ["kontraktor gudang", "kontraktor bangunan Bekasi", "jasa konstruksi", "kontraktor ruko"],
+    },
     faq: [
       { q: "Apakah survei lokasi berbayar?", a: "Gratis untuk area Jabodetabek. Di luar itu, biaya transportasi survei dipotong dari nilai kontrak jika proyek berjalan." },
       { q: "Berapa lama RAB bisa diterima?", a: "RAB terperinci kami kirim dalam 7 hari kerja setelah survei dan gambar kerja tersedia." },
@@ -360,6 +388,13 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Setiap hari, 07.00–21.00",
     },
     whatsapp: "0811-2200-3300",
+    seo: {
+      schemaType: "MedicalClinic",
+      locality: "Bandung",
+      region: "Jawa Barat",
+      openingHours: ["Mo-Su 07:00-21:00"],
+      keywords: ["klinik Bandung", "dokter gigi Bandung", "klinik BPJS", "dokter umum"],
+    },
     faq: [
       { q: "Apakah melayani pasien BPJS?", a: "Ya, untuk peserta yang terdaftar di klinik kami sebagai faskes tingkat pertama. Kami juga menerima lebih dari 20 asuransi swasta." },
       { q: "Perlu daftar dulu atau bisa langsung datang?", a: "Bisa langsung datang, tapi pasien yang daftar online didahulukan sesuai jam yang dipilih." },
@@ -392,7 +427,7 @@ export const companyTemplates: CompanyTemplate[] = [
       { en: "Brand story", id: "Cerita brand" },
       { en: "Reservations", id: "Reservasi" },
     ],
-    theme: { primary: "#b45309", accent: "#fde68a", dark: true, font: "serif" },
+    theme: { primary: "#d97706", accent: "#fde68a", dark: true, font: "serif" },
     company: { name: "Ruang Temu", tagline: "Kopi & Dapur" },
     nav: ["Beranda", "Menu", "Pesan Online", "Cerita", "Lokasi"],
     hero: {
@@ -444,6 +479,14 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Setiap hari, 08.00–23.00",
     },
     whatsapp: "0813-9000-7788",
+    seo: {
+      schemaType: "CafeOrCoffeeShop",
+      locality: "Yogyakarta",
+      region: "DI Yogyakarta",
+      openingHours: ["Mo-Su 08:00-23:00"],
+      priceRange: "Rp20.000–Rp40.000",
+      keywords: ["coffee shop Jogja", "kopi lokal Yogyakarta", "kafe Kotabaru", "roastery Jogja"],
+    },
     faq: [
       { q: "Apakah bisa pesan untuk diambil (take away)?", a: "Bisa. Pesan lewat tombol di bagian Pesan Online, lalu ambil di cabang pilihan Anda dalam 15 menit." },
       { q: "Apakah menerima pesanan untuk acara kantor?", a: "Ya, untuk minimal 20 porsi. Hubungi kami H-2 agar biji kopi bisa disiapkan." },
@@ -553,6 +596,13 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Senin–Sabtu, 08.00–18.00",
     },
     whatsapp: "0812-1500-1230",
+    seo: {
+      schemaType: "ProfessionalService",
+      locality: "Jakarta Utara",
+      region: "DKI Jakarta",
+      openingHours: ["Mo-Sa 08:00-18:00"],
+      keywords: ["jasa logistik B2B", "ekspedisi kargo", "fulfillment Jakarta", "pengiriman antar pulau"],
+    },
     faq: [
       { q: "Apakah ada minimum berat pengiriman?", a: "Untuk layanan Reguler dan Express tidak ada minimum. Kargo minimum 10 kg per pengiriman." },
       { q: "Bagaimana jika barang rusak atau hilang?", a: "Setiap kiriman dilindungi asuransi dasar; untuk barang bernilai tinggi tersedia asuransi tambahan hingga Rp500 juta." },
@@ -649,6 +699,14 @@ export const companyTemplates: CompanyTemplate[] = [
       hours: "Senin–Jumat, 09.00–20.00",
     },
     whatsapp: "0821-3300-4455",
+    seo: {
+      schemaType: ["EducationalOrganization", "LocalBusiness"],
+      title: "Cendekia Academy — Kursus Skill Digital di Surabaya",
+      locality: "Surabaya",
+      region: "Jawa Timur",
+      openingHours: ["Mo-Fr 09:00-20:00"],
+      keywords: ["kursus web development Surabaya", "bootcamp data analytics", "kursus UI/UX", "kursus digital marketing"],
+    },
     faq: [
       { q: "Apakah pemula tanpa latar belakang IT bisa ikut?", a: "Bisa. Semua program dimulai dari dasar, dan tes penempatan membantu menyesuaikan kelas." },
       { q: "Apakah tersedia cicilan?", a: "Ya, cicilan 0% hingga 6 bulan melalui mitra pembayaran kami." },
