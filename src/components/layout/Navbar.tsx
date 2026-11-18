@@ -17,6 +17,7 @@ const navItems: { href: string; labelKey: TranslationKey }[] = [
   { href: "/about", labelKey: "nav.about" },
   { href: "/projects", labelKey: "nav.projects" },
   { href: "/projects/property-agency-builder", labelKey: "nav.websiteBuilder" },
+  { href: "/templates", labelKey: "nav.templates" },
   { href: "/work", labelKey: "nav.work" },
   { href: "/playground", labelKey: "nav.playground" },
   { href: "/blog", labelKey: "nav.blog" },
@@ -36,7 +37,7 @@ function isNavActive(pathname: string, href: string): boolean {
 
 function navLinkClass(active: boolean) {
   return cn(
-    "rounded-md px-3 py-2 text-sm transition-colors",
+    "whitespace-nowrap rounded-md px-2 py-2 text-sm transition-colors xl:px-2.5",
     active
       ? "border border-primary/40 bg-primary-soft font-semibold text-primary-text shadow-sm shadow-primary/15"
       : "text-foreground/60 hover:bg-foreground/5 hover:text-foreground"
@@ -75,7 +76,7 @@ export function Navbar() {
           <span className="text-primary-text">.dev</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => {
             const active = isNavActive(pathname, item.href);
             return (
@@ -96,7 +97,7 @@ export function Navbar() {
           <ThemeToggle />
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-foreground/10 md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-foreground/10 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
@@ -108,7 +109,7 @@ export function Navbar() {
 
       {open ? (
         <nav
-          className="border-t border-foreground/10 bg-background/95 px-4 py-3 backdrop-blur md:hidden"
+          className="border-t border-foreground/10 bg-background/95 px-4 py-3 backdrop-blur lg:hidden"
           aria-label={t("nav.mobileMenu")}
         >
           <ul className="space-y-1">

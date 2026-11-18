@@ -302,6 +302,19 @@ USDC testnet gratis dari [faucet.circle.com](https://faucet.circle.com).
 Env opsional: `TOKEN_GATE_RPC_URL` (RPC sendiri, mis. Alchemy — RPC publik dibatasi),
 `TOKEN_GATE_ADDRESS`, `TOKEN_GATE_SYMBOL`, `TOKEN_GATE_MIN`.
 
+## Katalog template company profile
+
+Menu **Templates** (`/templates`) — katalog template website company profile untuk calon klien.
+
+- Data template: `src/content/company-templates.ts` (konten contoh fiktif, bahasa Indonesia).
+  Tambah template = tambah satu objek; pilih `layout` (`corporate` | `bold` | `minimal`) dan `theme`.
+- Renderer: `src/components/company-templates/TemplateSite.tsx` (server component, tanpa JS klien;
+  warna lewat CSS variable, tidak terpengaruh dark mode portfolio).
+- `/templates/<slug>` — preview penuh dengan toggle Desktop / Tablet / Mobile
+  (bisa dibagikan: `?device=mobile`). `/templates/<slug>/view` — template saja (`noindex`),
+  dipakai iframe; thumbnail katalog adalah iframe ini yang diperkecil.
+- "Gunakan template ini" → `/contact?template=<slug>`: pesan di form kontak terisi otomatis.
+
 ## Smart contact form
 
 `/contact` punya form yang disortir AI (`POST /api/contact`):

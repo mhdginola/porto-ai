@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/lib/site";
 import { getProjectsByVisibility } from "@/content/projects";
 import { blogPosts } from "@/content/blog";
+import { companyTemplates } from "@/content/company-templates";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = siteConfig.url.replace(/\/$/, "");
@@ -14,6 +15,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/work`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/playground`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${base}/templates`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    ...companyTemplates.map((t) => ({
+      url: `${base}/templates/${t.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
     { url: `${base}/contact`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
   ];
 

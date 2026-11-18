@@ -28,6 +28,7 @@ import {
 } from "@/lib/contact/schema";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { siteConfig } from "@/lib/site";
+import { getCompanyTemplate } from "@/content/company-templates";
 import { cn } from "@/lib/utils";
 
 const channels = [
@@ -73,6 +74,15 @@ export function ContactView() {
 
   useEffect(() => {
     renderedAt.current = Date.now();
+    // Coming from "Use this template" (/contact?template=<slug>): prefill the message.
+    const slug = new URLSearchParams(window.location.search).get("template");
+    const tpl = slug ? getCompanyTemplate(slug) : undefined;
+    if (tpl) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time prefill from the URL after mount
+      setMessage(t("contact.form.templatePrefill").replace("{name}", tpl.name));
+    }
+    // Run once on mount; later locale changes must not overwrite what the visitor typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function validate(): FieldErrors {

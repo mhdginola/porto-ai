@@ -14,8 +14,10 @@ type Props = {
 export function PortfolioShell({ children, defaultModelRef }: Props) {
   const { active: previewActive } = usePropertyAgencyPreview();
   const pathname = usePathname();
-  // Admin pages and the agency-site preview render without the portfolio chrome.
-  const bare = previewActive || pathname.startsWith("/admin");
+  // Admin pages, the agency-site preview and template previews (/templates/<slug>…)
+  // render without the portfolio chrome. The /templates catalog keeps it.
+  const bare =
+    previewActive || pathname.startsWith("/admin") || /^\/templates\/[^/]+/.test(pathname);
 
   return (
     <>
